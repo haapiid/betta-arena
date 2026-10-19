@@ -1,0 +1,218 @@
+@import "tailwindcss";
+
+/*
+  CUPANG ARENA: a betta keeper's room at night. Lit jars on a dark shelf, show-bench gold,
+  coral red for anything that costs or risks coins. Fish are the colour; the chrome stays quiet.
+*/
+
+@font-face {
+  font-family: 'Hanken Grotesk';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/fonts/HankenGrotesk-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('/fonts/JetBrainsMono-var.woff2') format('woff2');
+}
+
+@theme {
+  --color-ink: #03111a;
+  --color-deep: #061b25;
+  --color-panel: #0a2430;
+  --color-panel-2: #0e2e3c;
+  --color-line: #1a4152;
+  --color-line-soft: #133544;
+  --color-text: #e4f1f4;
+  --color-dim: #8eabb6;
+  --color-faint: #5d7d89;
+  --color-gold: #f2c14e;
+  --color-gold-soft: #ffe3a1;
+  --color-coral: #ff6b57;
+  --color-teal: #5fe0d0;
+  --color-good: #5fd39a;
+  --color-warn: #f2a33a;
+  --color-bad: #ff5d6c;
+
+  --font-display: "Fraunces Variable", Georgia, serif;
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 76px;
+}
+body {
+  background: var(--color-ink);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+}
+::selection {
+  background: var(--color-gold);
+  color: var(--color-ink);
+}
+
+.display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+.num {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum", "lnum";
+}
+.eyebrow {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+/* glass jar: rounded glass with highlights */
+.jar {
+  position: relative;
+  border-radius: 22px 22px 34px 34px;
+  overflow: hidden;
+  background: #0a2d38;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(200, 240, 250, 0.28),
+    inset 0 0 0 5px rgba(200, 240, 250, 0.05),
+    0 24px 50px -20px rgba(0, 0, 0, 0.8),
+    0 0 60px -20px rgba(95, 224, 208, 0.25);
+}
+.jar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background:
+    linear-gradient(100deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0) 9%),
+    linear-gradient(260deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 6%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 3%);
+  z-index: 2;
+}
+.jar-glass {
+  position: relative;
+}
+.jar > canvas,
+.jar-glass > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.card {
+  background: linear-gradient(180deg, var(--color-panel), var(--color-deep));
+  border: 1px solid var(--color-line-soft);
+  border-radius: 16px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  padding: 0.62rem 1.15rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition: transform 160ms var(--ease-out-expo), background-color 160ms, border-color 160ms, opacity 160ms;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn-gold {
+  background: var(--color-gold);
+  color: #1d1405;
+}
+.btn-gold:hover:not(:disabled) {
+  background: var(--color-gold-soft);
+}
+.btn-coral {
+  background: var(--color-coral);
+  color: #200603;
+}
+.btn-coral:hover:not(:disabled) {
+  background: #ff8b7a;
+}
+.btn-ghost {
+  border: 1px solid var(--color-line);
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.02);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--color-dim);
+  background: rgba(255, 255, 255, 0.05);
+}
+.btn-sm {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 2px;
+}
+
+.bar {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 500ms var(--ease-out-expo);
+}
+
+.input {
+  background: var(--color-ink);
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+  color: var(--color-text);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 420ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
