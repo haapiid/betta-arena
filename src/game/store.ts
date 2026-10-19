@@ -1,26 +1,20 @@
-// Player state and every game action. Saved to localStorage per wallet address.
-// Note: this is the demo / off-chain build. For real money, balances, purchases, stakes and
-// payouts must move to a smart contract or server (see README).
+// The keeper's game, as seen from the browser. State lives on the game server (care) and on
+// Robinhood Chain (fish NFTs, $BETTA, tournament entries). Every action either calls the server
+// or sends a transaction, then refreshes from the server once the indexer has caught up.
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  addXp, applyItem, CARE_SPEED, FEMALE_PRICE, type Sex, canRush, canTrain, canUse, rushCost, effective, levelOf, MAX_TANKS, MIN_ENTRY_HEALTH, newFish, pendingTraits, stageOf, tickFish, train,
-  TRAININGS, type Fish,
-} from './fish'
-import { itemById } from './items'
-import { BREED_BURN, BREED_FEE, BREED_HEALTH_COST, BREED_REST, cannotBreed, makeFry, phaseOf, type Breeding } from './breeding'
-import { speciesById } from './species'
-import { traitById, traitOptions } from './traits'
-import {
-  buildField, DIVISIONS, divisionFor, endsAt, entriesOpen, injuries, MAX_PLAYER_ENTRIES, MIN_FIELD, prizesOf, roundAt, runTournament, XP_LOSS, XP_WIN,
-  type DivisionId, type TournamentResult,
-} from './tournament'
-import type { Fighter } from './battle'
+import { formatUnits, parseUnits, type Address, type Hex } from 'viem'
+import { bettaArenaAbi, bettaFishAbi, bettaShopAbi, erc20Abi } from '../chain/abi'
+import { api, ApiError, hasSession, signIn as siwe } from '../lib/api'
+import { chain, LIVE, NET } from '../lib/net'
+import { ensureAllowance, publicClient, readable, send } from '../lib/wallet'
+import { freshState, freeSlot, type PlayerState, type Result } from './engine'
+import { priceOfSex, skuById, skuForItem, speciesIndex } from './catalog'
+import { divisionByIndex, type DivisionId } from './tournament'
+import type { Sex } from './fish'
 
-export const START_BALANCE = 1000
-export const FAUCET_AMOUNT = 500
-export const FAUCET_COOLDOWN = 6 * 3_600_000
-export const DEMO = import.meta.env.VITE_DEMO_MODE === 'true'
+export type { Result } from './engine'
+export { freeSlot } from './engine'
 
 export interface Entry {
   n: number
@@ -29,496 +23,232 @@ export interface Entry {
   stake: number
 }
 
-export interface Grave {
-  name: string
-  speciesId: string
-  cause: string
-  diedAt: number
-  wins: number
-  level: number
-}
-
-export interface Player {
-  version: 1
-  balance: number
-  tanks: (Fish | null)[]
-  inventory: Record<string, number>
+export interface Player extends PlayerState {
+  balance: number // $BETTA in the wallet
   entries: Entry[]
-  resolved: number[]
-  history: TournamentResult[]
-  graves: Grave[]
-  lastFaucet: number
-  log: { t: number; text: string }[]
-  breeding: Breeding | null
-  burned: number // coins this player has burned (arena fee share is not tracked here)
 }
 
-export type Result = { ok: boolean; msg: string }
+const empty = (): Player => ({ ...freshState(), balance: 0, entries: [] })
+const no = (msg: string): Result => ({ ok: false, msg })
 
-function fresh(): Player {
-  return {
-    version: 1,
-    balance: START_BALANCE,
-    tanks: Array(MAX_TANKS).fill(null),
-    inventory: { pellet: 10, water: 2 }, // a starter pack of pellets
-    entries: [],
-    resolved: [],
-    history: [],
-    graves: [],
-    lastFaucet: 0,
-    breeding: null,
-    burned: 0,
-    log: [{ t: Date.now(), text: `Welcome. ${START_BALANCE} coins and three empty jars.` }],
-  }
-}
-
-const key = (addr: string | null) => `betta-arena:v1:${addr ?? 'guest'}`
-
-// the save on disk, or null when there is none (or storage is blocked)
-function loadSaved(addr: string | null): Player | null {
-  try {
-    const raw = localStorage.getItem(key(addr))
-    if (raw) {
-      const p = JSON.parse(raw) as Player
-      if (p.version === 1) {
-        // fill fields added after a save was written
-        p.tanks = p.tanks.map((f) => (f ? ({ xp: 0, xpDay: 0, xpToday: 0, traits: [], buffs: [], lastTrain: 0, sex: 'male', gen: 1, breeds: 0, restUntil: 0, ...(f as object) } as unknown as Fish) : f))
-        p.breeding ??= null
-        p.burned ??= 0
-        return p
-      }
-    }
-  } catch {
-    /* corrupt data or blocked storage */
-  }
-  return null
-}
-
-const load = (addr: string | null): Player => loadSaved(addr) ?? fresh()
-
-export const priceOf = (price: number, sex: Sex) => (sex === 'female' ? Math.round(price * FEMALE_PRICE) : price)
-
-// a jar that is empty and not being used as the spawning tank
-export const freeSlot = (p: Player) => p.tanks.findIndex((t, i) => t === null && p.breeding?.slot !== i)
-
-export function openRound(p: Player, now: number) {
-  let n = roundAt(now)
-  while (p.resolved.includes(n)) n++
-  return n
-}
-
-export function fighterOf(f: Fish, owner: string, stake: number, now: number): Fighter {
-  const e = effective(f, now)
-  return {
-    id: f.id,
-    name: f.name,
-    owner,
-    mine: true,
-    speciesId: f.speciesId,
-    genome: f.genome,
-    level: levelOf(f),
-    traits: [...f.traits],
-    attack: e.attack,
-    defense: e.defense,
-    beauty: e.beauty,
-    health: Math.round(f.health),
-    sick: f.sick,
-    stake,
-    size: stageOf(f, now).size,
-    gen: f.gen,
-  }
-}
-
-const log = (p: Player, text: string) => {
-  p.log.unshift({ t: Date.now(), text })
-  p.log.length = Math.min(p.log.length, 60)
-}
-
-export function useGame(addr: string | null, ownerLabel: string, notify: (r: Result) => void) {
-  const [p, setP] = useState<Player>(() => load(addr))
-  const ref = useRef(p)
-  ref.current = p
-  // whose save `ref.current` holds; differs from `addr` for one render after switching wallets
-  const owner = useRef(addr)
+export function useGame(addr: Address | null, notify: (r: Result) => void) {
+  const [p, setP] = useState<Player>(empty)
+  const [signedIn, setSignedIn] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const pRef = useRef(p)
+  pRef.current = p
+  const decimals = useRef(18)
   const notifyRef = useRef(notify)
   notifyRef.current = notify
 
-  useEffect(() => {
-    const d = load(addr)
-    ref.current = d
-    owner.current = addr
-    setP(d)
-    // another tab saved this wallet: pick up its state instead of overwriting it later
-    const onStorage = (e: StorageEvent) => {
-      if (e.key !== key(addr)) return
-      const s = loadSaved(addr)
-      if (s) {
-        ref.current = s
-        setP(s)
+  const units = (x: number) => parseUnits(String(x), decimals.current)
+
+  const refresh = useCallback(async (): Promise<Player | null> => {
+    if (!addr || !LIVE) return null
+    const bal = await publicClient
+      .readContract({ address: NET.contracts.token!, abi: erc20Abi, functionName: 'balanceOf', args: [addr] })
+      .catch(() => 0n)
+    let next: Player = { ...pRef.current, balance: Number(formatUnits(bal, decimals.current)) }
+    if (hasSession(addr)) {
+      try {
+        const me = await api<{ state: PlayerState; msgs: string[]; entries: { round: number; division: number; fishId: string; fee: string }[] }>('/api/me', { as: addr })
+        next = {
+          ...me.state,
+          balance: next.balance,
+          entries: me.entries.map((e) => ({ n: e.round, div: divisionByIndex(e.division).id, fishId: String(e.fishId), stake: Number(e.fee) })),
+        }
+        setSignedIn(true)
+        for (const m of me.msgs) notifyRef.current({ ok: true, msg: m })
+      } catch (e) {
+        if (e instanceof ApiError && e.status === 401) setSignedIn(false)
       }
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
+    } else setSignedIn(false)
+    setP(next)
+    pRef.current = next
+    return next
   }, [addr])
 
-  // single door for every change: read the latest save → clone → mutate → save.
-  // Starting from disk (not memory) stops a stale tab or a just-switched wallet from
-  // writing one save over another.
-  const commit = useCallback(
-    (fn: (d: Player, now: number) => Result | void) => {
-      const base = loadSaved(addr) ?? (owner.current === addr ? ref.current : fresh())
-      const d = structuredClone(base)
-      const r = fn(d, Date.now())
-      if (r && !r.ok) {
-        notifyRef.current(r)
-        return r
+  // a new wallet: start from an empty shelf, then load it
+  useEffect(() => {
+    setP(empty())
+    pRef.current = empty()
+    setSignedIn(false)
+    if (!addr || !LIVE) return
+    publicClient
+      .readContract({ address: NET.contracts.token!, abi: erc20Abi, functionName: 'decimals' })
+      .then((d) => (decimals.current = Number(d)))
+      .catch(() => {})
+    void refresh()
+    const id = setInterval(refresh, 10_000)
+    return () => clearInterval(id)
+  }, [addr, refresh])
+
+  /** Poll the server until the chain event shows up in the keeper's state. */
+  const waitFor = useCallback(
+    async (done: (x: Player) => boolean, label = 'Waiting for the chain…') => {
+      setBusy(label)
+      const end = Date.now() + 90_000
+      while (Date.now() < end) {
+        const x = await refresh()
+        if (x && done(x)) return true
+        await new Promise((r) => setTimeout(r, 2000))
       }
-      ref.current = d
-      setP(d)
-      try {
-        localStorage.setItem(key(addr), JSON.stringify(d))
-      } catch {
-        /* storage full or blocked */
-      }
-      if (r) notifyRef.current(r)
-      return r ?? { ok: true, msg: '' }
+      return false
     },
-    [addr],
+    [refresh],
   )
 
-  const resolveRound = (d: Player, n: number, now: number): TournamentResult[] => {
-    const out: TournamentResult[] = []
-    for (const div of DIVISIONS) {
-      const mine = d.entries.filter((e) => e.n === n && e.div === div.id)
-      const fighters: Fighter[] = []
-      for (const e of mine) {
-        const f = d.tanks.find((t) => t?.id === e.fishId)
-        if (!f || !f.alive) {
-          // registration is closed by now, so the fee stays in the pot (same rule as releasing the fish)
-          log(d, `Entry fee ${e.stake} forfeited: ${f ? `${f.name} died before the bell` : 'the fish was no longer in the jar'}.`)
-        } else if (divisionFor(levelOf(f)).id !== e.div) {
-          // it levelled out of the division it entered: it may not fight weaker fish for their prizes
-          d.balance += e.stake
-          log(d, `${f.name} reached level ${levelOf(f)} and outgrew ${div.name}. Entry fee ${e.stake} refunded.`)
-        } else fighters.push(fighterOf(f, ownerLabel, e.stake, now))
-      }
-      if (!fighters.length) continue
-      const field = buildField(n, div.id, fighters)
-      if (field.length < MIN_FIELD) {
-        // not enough fish signed up: the round is called off and every fee goes back
-        for (const f of fighters) d.balance += f.stake
-        log(d, `Round #${n} ${div.name} called off: only ${field.length} entrant${field.length === 1 ? '' : 's'} (min ${MIN_FIELD}). Fees refunded.`)
-        continue
-      }
-      const res = runTournament(n, div.id, field, now)
-      const won = new Map(prizesOf(res).map((pz) => [res.fighters[pz.fighter].id, pz.amount]))
-      const hurt = injuries(res)
-      d.tanks = d.tanks.map((f) => {
-        if (!f) return f
-        const h = hurt.get(f.id)
-        if (!h) return f
-        const x: Fish = { ...f, wins: f.wins + h.wins, losses: f.losses + h.losses, health: Math.max(0, f.health - h.lost) }
-        addXp(x, h.wins * XP_WIN + h.losses * XP_LOSS, now, false)
-        x.earned += won.get(f.id) ?? 0
-        if (x.health <= 0) {
-          x.alive = false
-          x.diedAt = now
-          x.cause = 'battle wounds'
+  /** One action at a time, with a busy label, errors turned into toasts. */
+  const run = useCallback(
+    async (label: string, fn: (a: Address) => Promise<Result | void>): Promise<Result> => {
+      if (!LIVE) return no('The game is not live yet.')
+      if (!addr) return no('Connect your wallet first.')
+      if (busy) return no('One moment, the last action is still finishing.')
+      setBusy(label)
+      let r: Result
+      try {
+        if (!hasSession(addr)) {
+          setBusy('Sign the message in your wallet to log in…')
+          await siwe(addr)
+          setSignedIn(true)
+          setBusy(label)
         }
-        return x
-      })
-      d.balance += res.myPayout
-      d.history.unshift(res)
-      const champ = res.fighters[res.champion]
-      log(
-        d,
-        res.myPayout
-          ? `Round #${n} ${div.name}: ${champ.mine ? `${champ.name} WON` : 'prize money'}. +${res.myPayout} coins.`
-          : `Round #${n} ${div.name}: champion was ${champ.name} (${champ.owner}).`,
-      )
-      out.push(res)
-    }
-    d.history.length = Math.min(d.history.length, 60) // enough for a leaderboard season
-    d.entries = d.entries.filter((e) => e.n !== n)
-    if (!d.resolved.includes(n)) d.resolved.push(n)
-    d.resolved = d.resolved.filter((x) => x >= Math.min(n, roundAt(now)) - 20)
-    return out
-  }
+        r = (await fn(addr)) ?? { ok: true, msg: '' }
+      } catch (e) {
+        r = no(e instanceof ApiError ? e.message : readable(e))
+      } finally {
+        setBusy(null)
+      }
+      void refresh()
+      if (r.msg) notifyRef.current(r)
+      return r
+    },
+    [addr, busy, refresh],
+  )
 
-  const summary = (n: number, rs: TournamentResult[]) => {
-    const won = rs.reduce((s, r) => s + r.myPayout, 0)
-    return won ? `🏆 You won round #${n}! +${won}` : `Round #${n} is over. Check the results.`
-  }
+  const action = (label: string, body: Record<string, unknown>) =>
+    run(label, async (a) => {
+      const r = await api<Result>('/api/action', { body, as: a }).catch((e) => no(e instanceof ApiError ? e.message : readable(e)))
+      await refresh()
+      return r
+    })
 
-  // game clock: fish condition, plus any tournament whose bell has rung
-  useEffect(() => {
-    const tick = () => {
-      const now = Date.now()
-      const cur = ref.current
-      const needs = cur.tanks.some((f) => f?.alive && now - f.lastTick > 20_000) || cur.entries.some((e) => endsAt(e.n) <= now)
-      if (!needs) return
-      commit((d) => {
-        const died: string[] = []
-        d.tanks = d.tanks.map((f) => {
-          if (!f) return f
-          const before = levelOf(f)
-          const x = tickFish(f, now)
-          if (f.alive && !x.alive) {
-            died.push(x.name)
-            log(d, `${x.name} died of ${x.cause}.`)
-          } else if (levelOf(x) > before) log(d, `${x.name} reached level ${levelOf(x)}.`)
-          return x
-        })
-        const msgs: string[] = []
-        for (const n of [...new Set(d.entries.filter((e) => endsAt(e.n) <= now).map((e) => e.n))].sort((a, b) => a - b))
-          msgs.push(summary(n, resolveRound(d, n, now)))
-        if (died.length) msgs.push(`💀 ${died.join(', ')} died. Check your jars.`)
-        if (msgs.length) return { ok: true, msg: msgs.join(' ') }
-      })
-    }
-    tick()
-    const id = setInterval(tick, 5000)
-    return () => clearInterval(id)
-  }, [commit])
-
-  const levelUpNote = (before: number, f: Fish) => {
-    const after = levelOf(f)
-    if (after <= before) return ''
-    return pendingTraits(f) > 0 ? ` Level ${after}! A new trait is ready.` : ` Level ${after}!`
+  /** Buy `qty` of a shop SKU on chain and wait until the server credits it. */
+  const buySku = async (a: Address, skuId: string, qty = 1) => {
+    const sku = skuById(skuId)
+    if (!sku) throw new Error('Unknown item.')
+    const total = units(sku.price * qty)
+    const have = pRef.current.inventory[sku.item] ?? 0
+    setBusy(`Approve and pay ${sku.price * qty} $${SYMBOL} in your wallet…`)
+    await ensureAllowance(a, NET.contracts.shop!, total)
+    await send(a, { address: NET.contracts.shop!, abi: bettaShopAbi, functionName: 'buyItems', args: [sku.index, qty, total], chain, account: a })
+    const ok = await waitFor((x) => (x.inventory[sku.item] ?? 0) >= have + sku.qty * qty, 'Paid. Stocking the cabinet…')
+    if (!ok) throw new Error('Paid on chain; the cabinet will update in a moment.')
   }
 
   const actions = {
+    signIn: () =>
+      run('Sign the message in your wallet to log in…', async (a) => {
+        await siwe(a)
+        setSignedIn(true)
+        return { ok: true, msg: 'Signed in. Your jars are loaded.' }
+      }),
+
     buyFish: (speciesId: string, sex: Sex = 'male') =>
-      commit((d) => {
-        const sp = speciesById(speciesId)
-        const price = priceOf(sp.price, sex)
-        const slot = freeSlot(d)
-        if (slot < 0) return { ok: false, msg: 'No free jar. Empty one first.' }
-        if (d.balance < price) return { ok: false, msg: `Not enough coins (need ${price}).` }
-        d.balance -= price
-        const f = newFish(speciesId, Date.now(), undefined, sex)
-        d.tanks[slot] = f
-        const label = `${sp.name} ${sex === 'male' ? '♂' : '♀'}`
-        log(d, `Bought ${label} "${f.name}" for ${price}. Jar ${slot + 1}.`)
-        return { ok: true, msg: `${label} "${f.name}" is in jar ${slot + 1}.` }
+      run('Getting a purchase pass…', async (a) => {
+        if (freeSlot(pRef.current) < 0) return no('No free jar. Empty one first.')
+        const species = speciesIndex(speciesId)
+        const pm = await api<{ nonce: string; deadline: string; sig: Hex }>('/api/permit/fish', { body: { species, female: sex === 'female' }, as: a })
+        const price = units(priceOfSex(speciesId, sex))
+        setBusy('Approve and pay in your wallet…')
+        await ensureAllowance(a, NET.contracts.shop!, price)
+        const count = pRef.current.tanks.filter(Boolean).length
+        await send(a, { address: NET.contracts.shop!, abi: bettaShopAbi, functionName: 'buyFish', args: [species, sex === 'female', price, BigInt(pm.nonce), BigInt(pm.deadline), pm.sig], chain, account: a })
+        await waitFor((x) => x.tanks.filter(Boolean).length > count, 'Paid. Your betta is on its way…')
+        return { ok: true, msg: 'Your new betta is in its jar.' }
       }),
+
+    buyPack: (skuId: string, qty = 1) =>
+      run('Buying…', async (a) => {
+        await buySku(a, skuId, qty)
+        return { ok: true, msg: 'Added to your cabinet.' }
+      }),
+
+    /** Use an item; if none are left, buy the smallest pack first. */
+    useItem: (slot: number, item: string) =>
+      run('Using…', async (a) => {
+        if ((pRef.current.inventory[item] ?? 0) <= 0) {
+          const sku = skuForItem(item)
+          if (!sku) return no('That item is not sold.')
+          await buySku(a, sku.id)
+        }
+        return api<Result>('/api/action', { body: { type: 'useItem', slot, item }, as: a })
+      }),
+
+    train: (slot: number, training: string) => action('Training…', { type: 'train', slot, training }),
+
+    /** Skip the cooldown: buys the missing rush hours, then trains. */
+    rushTrain: (slot: number, training: string, hours: number) =>
+      run('Rushing…', async (a) => {
+        const missing = hours - (pRef.current.inventory.rush ?? 0)
+        if (missing > 0) await buySku(a, 'rush', missing)
+        return api<Result>('/api/action', { body: { type: 'rush', slot, training, quoted: hours }, as: a })
+      }),
+
+    pickTrait: (slot: number, trait: string) => action('Learning…', { type: 'pickTrait', slot, trait }),
+    rename: (slot: number, name: string) => action('Renaming…', { type: 'rename', slot, name }),
+    bury: (slot: number) => action('Burying…', { type: 'bury', slot }),
+
+    /** Release a living fish: burns its NFT. */
+    release: (slot: number) =>
+      run('Confirm the release in your wallet…', async (a) => {
+        const f = pRef.current.tanks[slot]
+        if (!f) return no('That jar is empty.')
+        await send(a, { address: NET.contracts.fish!, abi: bettaFishAbi, functionName: 'burn', args: [BigInt(f.id)], chain, account: a })
+        await waitFor((x) => !x.tanks.some((t) => t?.id === f.id), 'Releasing…')
+        return { ok: true, msg: `${f.name} was released.` }
+      }),
+
     startBreeding: (maleSlot: number, femaleSlot: number) =>
-      commit((d, now) => {
-        if (d.breeding) return { ok: false, msg: 'A spawn is already in progress.' }
-        const m0 = d.tanks[maleSlot]
-        const f0 = d.tanks[femaleSlot]
-        if (!m0 || !f0 || m0.sex !== 'male' || f0.sex !== 'female') return { ok: false, msg: 'Pick one male and one female.' }
-        const m = tickFish(m0, now)
-        const f = tickFish(f0, now)
-        const entered = (x: Fish) => d.entries.some((e) => e.fishId === x.id)
-        const why = cannotBreed(m, now, entered(m)) ?? cannotBreed(f, now, entered(f))
-        if (why) return { ok: false, msg: why }
-        const slot = freeSlot(d)
-        if (slot < 0) return { ok: false, msg: 'You need an empty jar as the spawning tank.' }
-        if (d.balance < BREED_FEE) return { ok: false, msg: `Not enough coins (need ${BREED_FEE}).` }
-        d.balance -= BREED_FEE
-        d.burned += Math.round(BREED_FEE * BREED_BURN)
-        const seed = Math.floor(Math.random() * 2 ** 31)
-        const fry = makeFry(m, f, seed, now)
-        for (const [x, s] of [[m, maleSlot], [f, femaleSlot]] as const) {
-          x.health = Math.max(1, x.health - BREED_HEALTH_COST)
-          x.breeds += 1
-          x.restUntil = now + BREED_REST / CARE_SPEED
-          d.tanks[s] = x
-        }
-        d.breeding = { slot, maleId: m.id, femaleId: f.id, father: m.name, mother: f.name, startedAt: now, fry }
-        log(d, `${m.name} × ${f.name}: spawning in jar ${slot + 1}.`)
-        return { ok: true, msg: `${m.name} is building a bubble nest for ${f.name} in jar ${slot + 1}.` }
+      run('Preparing the spawn…', async (a) => {
+        if ((pRef.current.inventory.breed ?? 0) < 1) await buySku(a, 'breed')
+        return api<Result>('/api/action', { body: { type: 'startBreeding', maleSlot, femaleSlot }, as: a })
       }),
+
     keepFry: (index: number) =>
-      commit((d, now) => {
-        const b = d.breeding
-        if (!b) return { ok: false, msg: 'No spawn in progress.' }
-        if (phaseOf(b, now) !== 'fry') return { ok: false, msg: 'The eggs have not hatched yet.' }
-        const pick = b.fry[index]
-        if (!pick) return { ok: false, msg: 'Pick one of the fry.' }
-        const f: Fish = { ...pick, id: `f${now.toString(36)}${pick.genome.seed.toString(36)}`, bornAt: now, lastTick: now }
-        d.tanks[b.slot] = f
-        d.breeding = null
-        log(d, `Kept "${f.name}" (Gen ${f.gen}${f.mutation ? `, ${f.mutation}` : ''}) from ${b.father} × ${b.mother}.`)
-        return { ok: true, msg: `"${f.name}" moves into jar ${b.slot + 1}.${f.mutation ? ` A ${f.mutation} mutation!` : ''}` }
+      run('Getting the fry pass…', async (a) => {
+        const pm = await api<{ species: number; female: boolean; gen: number; seed: number; nonce: string; deadline: string; sig: Hex }>('/api/permit/fry', { body: { index }, as: a })
+        setBusy('Confirm in your wallet to keep this fry…')
+        await send(a, { address: NET.contracts.shop!, abi: bettaShopAbi, functionName: 'claimFry', args: [pm.species, pm.female, pm.gen, pm.seed, BigInt(pm.nonce), BigInt(pm.deadline), pm.sig], chain, account: a })
+        await waitFor((x) => !x.breeding, 'Moving the fry into its jar…')
+        return { ok: true, msg: 'Your fry moved into its jar.' }
       }),
-    abandonSpawn: () =>
-      commit((d) => {
-        if (!d.breeding) return
-        d.breeding = null
-        return { ok: true, msg: 'The spawning jar was emptied. The fee is not refunded.' }
-      }),
-    hatchNow: () =>
-      commit((d, now) => {
-        if (!d.breeding) return
-        d.breeding.startedAt = Math.min(d.breeding.startedAt, now - (48 * 3_600_000) / CARE_SPEED - 1000)
-        return { ok: true, msg: 'Demo: the eggs hatched.' }
-      }),
-    emptyTank: (slot: number) =>
-      commit((d, now) => {
-        const f = d.tanks[slot]
-        if (!f) return
-        // after registration closes the fee stays in the pot
-        for (const e of d.entries.filter((e) => e.fishId === f.id)) if (entriesOpen(e.n, now)) d.balance += e.stake
-        d.entries = d.entries.filter((e) => e.fishId !== f.id)
-        if (!f.alive) d.graves.unshift({ name: f.name, speciesId: f.speciesId, cause: f.cause ?? 'unknown', diedAt: f.diedAt ?? now, wins: f.wins, level: levelOf(f) })
-        d.graves.length = Math.min(d.graves.length, 30)
-        d.tanks[slot] = null
-        log(d, f.alive ? `Released ${f.name}. Jar ${slot + 1} is empty.` : `Buried ${f.name}. Jar ${slot + 1} is empty.`)
-        return { ok: true, msg: f.alive ? `${f.name} was released.` : `Rest well, ${f.name}.` }
-      }),
-    rename: (slot: number, name: string) =>
-      commit((d) => {
-        const f = d.tanks[slot]
-        const n = name.trim().slice(0, 18)
-        if (!f || !n) return { ok: false, msg: 'Name cannot be empty.' }
-        f.name = n
-      }),
-    buyItem: (id: string, qty = 1) =>
-      commit((d) => {
-        const it = itemById(id)
-        if (!it) return { ok: false, msg: 'Unknown item.' }
-        if (it.packs) return { ok: false, msg: `${it.name} is sold in packs.` }
-        const cost = it.price * qty
-        if (d.balance < cost) return { ok: false, msg: `Not enough coins (need ${cost}).` }
-        d.balance -= cost
-        d.inventory[id] = (d.inventory[id] ?? 0) + qty
-        return { ok: true, msg: `+${qty} ${it.name}` }
-      }),
-    // food comes in packs: `pack` is the index into item.packs; `feedSlot` also feeds one portion right away
-    buyPack: (id: string, pack: number, feedSlot?: number) =>
-      commit((d, now) => {
-        const it = itemById(id)
-        const pk = it?.packs?.[pack]
-        if (!it || !pk) return { ok: false, msg: 'Unknown pack.' }
-        if (d.balance < pk.price) return { ok: false, msg: `Not enough coins (need ${pk.price}).` }
-        let fed = ''
-        if (feedSlot !== undefined) {
-          const f0 = d.tanks[feedSlot]
-          if (!f0) return { ok: false, msg: 'No fish in that jar.' }
-          const f = tickFish(f0, now)
-          const why = canUse(f, it, now)
-          if (why) return { ok: false, msg: why }
-          const r = applyItem(f, it, now)
-          d.tanks[feedSlot] = r.fish
-          log(d, r.text)
-          fed = ` ${r.text}`
-        }
-        d.balance -= pk.price
-        d.inventory[id] = (d.inventory[id] ?? 0) + pk.qty - (feedSlot !== undefined ? 1 : 0)
-        return { ok: true, msg: `+${pk.qty} ${it.name} portions.${fed}` }
-      }),
-    useItem: (slot: number, id: string) =>
-      commit((d, now) => {
-        const it = itemById(id)
-        const f0 = d.tanks[slot]
-        if (!it || !f0) return { ok: false, msg: 'Nothing to use it on.' }
-        const f = tickFish(f0, now)
-        const why = canUse(f, it, now)
-        if (why) return { ok: false, msg: why }
-        if ((d.inventory[id] ?? 0) > 0) d.inventory[id]--
-        else if (it.packs) return { ok: false, msg: `Out of ${it.name}. Buy a pack in the shop.` }
-        else if (d.balance >= it.price) d.balance -= it.price
-        else return { ok: false, msg: `Not enough coins for ${it.name} (${it.price}).` }
-        const r = applyItem(f, it, now)
-        d.tanks[slot] = r.fish
-        log(d, r.text)
-        return { ok: true, msg: r.text + levelUpNote(levelOf(f), r.fish) }
-      }),
-    train: (slot: number, id: string) =>
-      commit((d, now) => {
-        const tr = TRAININGS.find((t) => t.id === id)
-        const f0 = d.tanks[slot]
-        if (!tr || !f0) return { ok: false, msg: 'Nothing to train.' }
-        const f = tickFish(f0, now)
-        const why = canTrain(f, now)
-        if (why) return { ok: false, msg: why }
-        const r = train(f, tr, now)
-        d.tanks[slot] = r.fish
-        log(d, r.text)
-        return { ok: true, msg: r.text + levelUpNote(levelOf(f), r.fish) }
-      }),
-    // pay coins to skip the cooldown and train at once; `quoted` is the price the player confirmed
-    rushTrain: (slot: number, id: string, quoted: number) =>
-      commit((d, now) => {
-        const tr = TRAININGS.find((t) => t.id === id)
-        const f0 = d.tanks[slot]
-        if (!tr || !f0) return { ok: false, msg: 'Nothing to train.' }
-        const f = tickFish(f0, now)
-        const why = canRush(f, now)
-        if (why) return { ok: false, msg: why }
-        const cost = rushCost(f, now)
-        if (cost > quoted) return { ok: false, msg: `The price changed to ${cost}. Try again.` }
-        if (d.balance < cost) return { ok: false, msg: `Not enough coins (need ${cost}).` }
-        d.balance -= cost
-        const r = train(f, tr, now)
-        d.tanks[slot] = r.fish
-        log(d, `Rushed for ${cost}. ${r.text}`)
-        return { ok: true, msg: `⚡ Paid ${cost}. ${r.text}${levelUpNote(levelOf(f), r.fish)}` }
-      }),
-    pickTrait: (slot: number, traitId: string) =>
-      commit((d) => {
-        const f = d.tanks[slot]
-        if (!f || !f.alive) return { ok: false, msg: 'No fish.' }
-        if (pendingTraits(f) <= 0) return { ok: false, msg: 'No trait to pick yet.' }
-        if (!traitOptions(f.id, f.traits).some((t) => t.id === traitId)) return { ok: false, msg: 'That trait is not on offer.' }
-        f.traits.push(traitId)
-        const t = traitById(traitId)!
-        log(d, `${f.name} learned ${t.name}.`)
-        return { ok: true, msg: `${f.name} learned ${t.name}.` }
-      }),
+
+    abandonSpawn: () => action('Emptying…', { type: 'abandonSpawn' }),
+
     enter: (slot: number) =>
-      commit((d, now) => {
-        const f = d.tanks[slot]
-        const n = openRound(d, now)
-        if (!entriesOpen(n, now)) return { ok: false, msg: `Registration for round #${n} is closed. The bell rings soon; the next round opens right after.` }
-        if (!f || !f.alive) return { ok: false, msg: 'Pick a living fish.' }
-        if (f.sex === 'female') return { ok: false, msg: 'Females do not fight. They breed.' }
-        const div = divisionFor(levelOf(f))
-        if (f.health < MIN_ENTRY_HEALTH) return { ok: false, msg: `${f.name} is too weak (health under ${MIN_ENTRY_HEALTH}). Treat it first.` }
-        if (d.entries.some((e) => e.fishId === f.id && e.n === n)) return { ok: false, msg: `${f.name} is already entered.` }
-        if (d.entries.filter((e) => e.n === n).length >= MAX_PLAYER_ENTRIES) return { ok: false, msg: 'Max 3 entries per round.' }
-        const fee = div.fee
-        if (d.balance < fee) return { ok: false, msg: `Not enough coins for the ${fee} entry fee.` }
-        d.balance -= fee
-        d.entries.push({ n, div: div.id, fishId: f.id, stake: fee })
-        log(d, `${f.name} entered round #${n} (${div.name}), entry fee ${fee}.`)
-        return { ok: true, msg: `${f.name} is in round #${n}, ${div.name} division. Entry fee: ${fee}.` }
+      run('Getting an entry pass…', async (a) => {
+        const s = await api<{ snapshot: Record<string, string | number | boolean>; sig: Hex; fee: number; division: DivisionId }>('/api/arena/snapshot', { body: { slot }, as: a })
+        const fee = units(s.fee)
+        setBusy(`Approve and pay the ${s.fee} $${SYMBOL} entry fee in your wallet…`)
+        await ensureAllowance(a, NET.contracts.arena!, fee)
+        const snap = { ...s.snapshot, fishId: BigInt(s.snapshot.fishId as string), deadline: BigInt(s.snapshot.deadline as string) } as never
+        await send(a, { address: NET.contracts.arena!, abi: bettaArenaAbi, functionName: 'enter', args: [snap, s.sig], chain, account: a })
+        const id = String(s.snapshot.fishId)
+        await waitFor((x) => x.entries.some((e) => e.fishId === id), 'Entered. Updating the bracket…')
+        return { ok: true, msg: `Entered in the ${divisionByIndex(Number(s.snapshot.division)).name} division.` }
       }),
-    withdraw: (fishId: string) =>
-      commit((d, now) => {
-        const e = d.entries.find((e) => e.fishId === fishId)
-        if (!e) return
-        if (!entriesOpen(e.n, now)) return { ok: false, msg: 'Registration is closed. Entries are locked until the bell.' }
-        d.balance += e.stake
-        d.entries = d.entries.filter((x) => x !== e)
-        return { ok: true, msg: `Entry withdrawn, ${e.stake} refunded.` }
-      }),
-    runNow: () =>
-      commit((d, now) => {
-        const n = openRound(d, now)
-        if (!d.entries.some((e) => e.n === n)) return { ok: false, msg: 'Enter at least one fish first.' }
-        const rs = resolveRound(d, n, now)
-        if (!rs.length) return { ok: false, msg: 'No valid entries.' }
-        return { ok: true, msg: summary(n, rs) }
-      }),
-    faucet: () =>
-      commit((d, now) => {
-        if (now - d.lastFaucet < FAUCET_COOLDOWN) return { ok: false, msg: 'Faucet is cooling down.' }
-        d.balance += FAUCET_AMOUNT
-        d.lastFaucet = now
-        return { ok: true, msg: `+${FAUCET_AMOUNT} test coins` }
-      }),
-    reset: () =>
-      commit((d) => {
-        // outside the demo a reset must not hand out a fresh 1000 coins
-        if (!DEMO) return { ok: false, msg: 'Reset is only available in the demo.' }
-        Object.assign(d, fresh())
-        return { ok: true, msg: 'Progress reset.' }
+
+    withdraw: (e: Entry) =>
+      run('Confirm the withdrawal in your wallet…', async (a) => {
+        const div = ['rookie', 'pro', 'elite'].indexOf(e.div)
+        await send(a, { address: NET.contracts.arena!, abi: bettaArenaAbi, functionName: 'withdraw', args: [BigInt(e.n), div, BigInt(e.fishId)], chain, account: a })
+        await waitFor((x) => !x.entries.some((y) => y.fishId === e.fishId), 'Refunding…')
+        return { ok: true, msg: `Entry withdrawn, ${e.stake} $${SYMBOL} refunded.` }
       }),
   }
 
-  return { p, actions }
+  return { p, actions, signedIn, busy, refresh }
 }
 
+const SYMBOL = import.meta.env.VITE_TOKEN_SYMBOL || 'BETTA'

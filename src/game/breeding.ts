@@ -30,6 +30,8 @@ export interface Breeding {
   mother: string
   startedAt: number
   fry: Fish[] // rolled at the start, revealed when they hatch
+  // the mint permit handed out for the kept fry; only one per spawn can ever be used
+  claim?: { index: number; nonce: string; deadline: number; sig: string }
 }
 
 export type BreedPhase = 'spawning' | 'eggs' | 'fry'

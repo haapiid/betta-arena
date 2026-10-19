@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Coins, LogOut, Wallet } from 'lucide-react'
+import { LogIn, LogOut, Wallet } from 'lucide-react'
 import { TankView } from './FishCanvas'
 import { Coin, countdown, fmt, SYMBOL } from './ui'
 import { SPECIES } from '../game/species'
 import { hasWallet, short } from '../lib/wallet'
-import { DEMO, FAUCET_AMOUNT, FAUCET_COOLDOWN, type Player } from '../game/store'
+import type { Player } from '../game/store'
+import { LIVE, NET } from '../lib/net'
 import { DIVISIONS, endsAt, FEE, PERIOD_DAYS, PRIZE_SPLIT } from '../game/tournament'
 import { DAILY_XP_CAP, LIFESPAN_DAYS, STAGE_BOUNDS } from '../game/fish'
 import { TRAIT_EVERY } from '../game/traits'
@@ -16,21 +17,20 @@ export function Logo({ className = '' }: { className?: string }) {
 export function Header({
   p,
   addr,
+  signedIn,
   onConnect,
+  onSignIn,
   onDisconnect,
-  onFaucet,
-  now,
   page = 'home',
 }: {
   page?: 'home' | 'community'
   p: Player
   addr: string | null
+  signedIn: boolean
   onConnect: () => void
+  onSignIn: () => void
   onDisconnect: () => void
-  onFaucet: () => void
-  now: number
 }) {
-  const faucetIn = p.lastFaucet + FAUCET_COOLDOWN - now
   return (
     <header className="sticky top-0 z-40 border-b border-line-soft bg-ink/80 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-10 lg:px-16">
@@ -53,19 +53,16 @@ export function Header({
           ))}
         </nav>
         <div className="ml-auto flex items-center gap-2">
-          {DEMO && (
-            <button
-              className="btn btn-ghost btn-sm hidden sm:inline-flex"
-              onClick={onFaucet}
-              disabled={faucetIn > 0}
-              title={faucetIn > 0 ? `Next claim in ${countdown(faucetIn)}` : `Claim ${FAUCET_AMOUNT} test coins`}
-            >
-              <Coins size={14} /> {faucetIn > 0 ? countdown(faucetIn) : `+${FAUCET_AMOUNT}`}
+          {addr && (
+            <div className="hidden rounded-full border border-line px-3 py-1.5 text-sm sm:block">
+              <Coin n={p.balance} className="font-semibold" />
+            </div>
+          )}
+          {addr && !signedIn && LIVE && (
+            <button className="btn btn-gold btn-sm" onClick={onSignIn} title="One free signature to load your jars">
+              <LogIn size={14} /> Sign in
             </button>
           )}
-          <div className="rounded-full border border-line px-3 py-1.5 text-sm">
-            <Coin n={p.balance} className="font-semibold" />
-          </div>
           {addr ? (
             <button className="btn btn-ghost btn-sm" onClick={onDisconnect} title="Disconnect">
               <span className="num">{short(addr)}</span> <LogOut size={13} />
@@ -74,13 +71,18 @@ export function Header({
             <button
               className="btn btn-gold btn-sm"
               onClick={onConnect}
-              title={hasWallet() ? 'Your jars are saved per wallet. Without one you play as a guest on this device.' : 'No Ethereum wallet found. Install MetaMask to save your jars.'}
+              title={hasWallet() ? `Connect to ${NET.name}` : 'No Ethereum wallet found. Install MetaMask to play.'}
             >
               <Wallet size={14} /> Connect wallet
             </button>
           )}
         </div>
       </div>
+      {!LIVE && (
+        <div className="border-t border-gold/20 bg-gold/10 px-4 py-1.5 text-center text-xs text-gold">
+          Launching soon on {NET.name}. Buying, care and the arena open once the contracts are live.
+        </div>
+      )}
     </header>
   )
 }
@@ -124,7 +126,9 @@ export function Hero({ p, now, round, pot }: { p: Player; now: number; round: nu
             </div>
             <div>
               <dt className="eyebrow">Total pot</dt>
-              <dd className="num mt-1 text-lg text-gold">{fmt(pot)}</dd>
+              <dd className="num mt-1 text-lg text-gold">
+                {fmt(pot)} <span className="text-[0.75em] text-dim">${SYMBOL}</span>
+              </dd>
             </div>
             <div>
               <dt className="eyebrow">Arena burn</dt>
@@ -147,10 +151,10 @@ export function Hero({ p, now, round, pot }: { p: Player; now: number; round: nu
 
 export function HowItWorks() {
   const steps = [
-    ['01', 'Buy a betta', 'Ten breeds, from an 80-coin Veiltail to a 650-coin Platinum Halfmoon. Every fish arrives as a level-1 juvenile with its own rolled stats and pattern. You can keep three at a time.'],
+    ['01', 'Buy a betta', `Ten breeds, paid in $${SYMBOL}, from an 80 Veiltail to a 650 Platinum Halfmoon. Every fish is an NFT in your wallet and arrives as a level-1 juvenile with its own rolled stats and pattern. You can keep three at a time.`],
     ['02', 'Keep it alive', 'Hunger climbs about 4.5 an hour and the water clouds about 2.8 an hour. Starving or murky water drains health, and dirty water brings sickness. At zero health the fish dies; the jar is yours to refill or leave empty.'],
     ['03', 'Level it up', `A healthy fish earns XP every hour on its own. Free training sessions (mirror flaring, morning sun, ketapang soak) and vitamins add more, up to ${DAILY_XP_CAP} XP a day. Fights give XP with no cap. Every level grows stats the way the breed grows, and every ${TRAIT_EVERY} levels it learns a trait.`],
-    ['04', 'Enter and fight', `Every ${PERIOD_DAYS} days each division runs a bracket of up to 16 fish, each paying the same entry fee. Registration closes an hour before the bell. Fights resolve on their own. After a ${Math.round(FEE * 100)}% burn the pot pays the top four: ${PRIZE_SPLIT[0] * 100}% to the champion, ${PRIZE_SPLIT[1] * 100}% to the runner-up, ${PRIZE_SPLIT[2] * 100}% to each losing semifinalist. Boosters (+10 for 24h) help on the day; fish come home wounded.`],
+    ['04', 'Enter and fight', `Every ${PERIOD_DAYS} days each division runs a bracket of up to 16 fish, each paying the same entry fee. Registration closes an hour before the bell. Every bracket is drawn and fought on chain, so anyone can check it. After a ${Math.round(FEE * 100)}% burn the pot pays the top four: ${PRIZE_SPLIT[0] * 100}% to the champion, ${PRIZE_SPLIT[1] * 100}% to the runner-up, ${PRIZE_SPLIT[2] * 100}% to each losing semifinalist. Boosters (+10 for 24h) help on the day; fish come home wounded.`],
   ]
   return (
     <section id="how" className="border-t border-line-soft bg-deep/60">
@@ -212,7 +216,7 @@ export function HowItWorks() {
   )
 }
 
-export function Footer({ onReset }: { onReset: () => void }) {
+export function Footer() {
   return (
     <footer className="border-t border-line-soft">
       <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-10 text-xs text-faint sm:flex-row sm:items-center sm:justify-between sm:px-10 lg:px-16">
@@ -221,12 +225,12 @@ export function Footer({ onReset }: { onReset: () => void }) {
           <span>Betta Arena · ${SYMBOL}</span>
         </div>
         <p className="max-w-xl leading-relaxed">
-          In-game coins, fish and entries are saved in this browser only. They are not ${SYMBOL} tokens, have no cash value and cannot be withdrawn. No real fish are harmed.
+          Purchases, entry fees and prizes are paid in ${SYMBOL} on {NET.name}. Fish are NFTs in your wallet; their care is kept by the game server. Only spend what you can afford to lose, and check that games like this are allowed where you live. No real fish are harmed.
         </p>
-        {DEMO && (
-          <button className="text-left hover:text-dim sm:text-right" onClick={() => window.confirm('Reset all progress for this wallet on this device?') && onReset()}>
-            Reset progress
-          </button>
+        {NET.contracts.arena && NET.explorer && (
+          <a className="text-left hover:text-dim sm:text-right" href={`${NET.explorer}/address/${NET.contracts.arena}`} target="_blank" rel="noopener noreferrer">
+            Arena contract ↗
+          </a>
         )}
       </div>
     </footer>

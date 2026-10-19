@@ -1,0 +1,25 @@
+{
+  "name": "betta-arena-launch-video",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio",
+    "render:demo": "remotion render DemoVideo out/demo-video.mp4 --codec=h264 --crf=18",
+    "render:square": "remotion render DemoSquare out/demo-video-square.mp4 --codec=h264 --crf=20",
+    "render:gif": "remotion render PostGif out/post.gif --codec=gif --every-nth-frame=2",
+    "render:logo": "remotion still Logo out/logo-x.png",
+    "render:banner": "remotion still Banner out/banner-x.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.530",
+    "@remotion/fonts": "4.0.530",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.530"
+  },
+  "devDependencies": {
+    "@types/react": "19.2.2",
+    "typescript": "5.9.3"
+  }
+}

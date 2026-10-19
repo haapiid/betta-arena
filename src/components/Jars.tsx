@@ -14,18 +14,18 @@ import { BreedPanel, SexMark, SpawnCard } from './Breeding'
 import { divisionFor } from '../game/tournament'
 import type { Entry, Player, Result } from '../game/store'
 
+type A<T extends unknown[]> = (...a: T) => Promise<Result>
 interface Actions {
-  useItem: (slot: number, id: string) => Result
-  train: (slot: number, id: string) => Result
-  rushTrain: (slot: number, id: string, quoted: number) => Result
-  buyPack: (id: string, pack: number, feedSlot?: number) => Result
-  pickTrait: (slot: number, id: string) => Result
-  emptyTank: (slot: number) => Result
-  rename: (slot: number, name: string) => Result
-  startBreeding: (maleSlot: number, femaleSlot: number) => Result
-  keepFry: (index: number) => Result
-  abandonSpawn: () => Result
-  hatchNow: () => Result
+  useItem: A<[slot: number, id: string]>
+  train: A<[slot: number, id: string]>
+  rushTrain: A<[slot: number, id: string, hours: number]>
+  pickTrait: A<[slot: number, id: string]>
+  bury: A<[slot: number]>
+  release: A<[slot: number]>
+  rename: A<[slot: number, name: string]>
+  startBreeding: A<[maleSlot: number, femaleSlot: number]>
+  keepFry: A<[index: number]>
+  abandonSpawn: A<[]>
 }
 
 const FOODS = ['pellet', 'daphnia', 'bloodworm']
@@ -37,18 +37,19 @@ const STAGE_TONE: Record<string, string> = {
   senior: 'text-dim',
 }
 
-export function Jars({ p, actions, now }: { p: Player; actions: Actions; now: number }) {
+export function Jars({ p, actions, now, connected }: { p: Player; actions: Actions; now: number; connected: boolean }) {
   const [care, setCare] = useState<number | null>(null)
   const [traitSlot, setTraitSlot] = useState<number | null>(null)
   // the last care action per jar, played as an animation in the glass
   const [acts, setActs] = useState<CareAct[]>([0, 1, 2].map(() => ({ n: 0, id: '' })))
-  const play = (slot: number, id: string, r: Result) => {
-    if (r.ok) setActs((l) => l.map((a, i) => (i === slot ? { n: a.n + 1, id } : a)))
-    return r
+  // the animation plays once the server has accepted the action
+  const play = async (slot: number, id: string, r: Promise<Result>) => {
+    const x = await r
+    if (x.ok) setActs((l) => l.map((a, i) => (i === slot ? { n: a.n + 1, id } : a)))
+    return x
   }
 
   const use = (slot: number, id: string) => play(slot, id, actions.useItem(slot, id))
-  const buyPackAndFeed = (slot: number, id: string) => play(slot, id, actions.buyPack(id, 0, slot))
   const foodLeft = FOODS.reduce((s, f) => s + (p.inventory[f] ?? 0), 0)
   const quickFeed = (slot: number) => use(slot, FOODS.find((f) => (p.inventory[f] ?? 0) > 0) ?? 'pellet')
   const careFish = care !== null ? p.tanks[care] : null
@@ -63,13 +64,14 @@ export function Jars({ p, actions, now }: { p: Player; actions: Actions; now: nu
       <div className="grid gap-x-6 gap-y-12 md:grid-cols-3">
         {p.tanks.map((f, slot) =>
           p.breeding && p.breeding.slot === slot ? (
-            <SpawnCard key={slot} b={p.breeding} now={now} onKeep={actions.keepFry} onAbandon={actions.abandonSpawn} onHatch={actions.hatchNow} />
+            <SpawnCard key={slot} b={p.breeding} now={now} onKeep={actions.keepFry} onAbandon={actions.abandonSpawn} />
           ) : (
           <TankCard
             key={slot}
             slot={slot}
             fish={f}
             entry={f ? p.entries.find((e) => e.fishId === f.id) : undefined}
+            connected={connected}
             now={now}
             act={acts[slot]}
             onFeed={() => quickFeed(slot)}
@@ -77,8 +79,9 @@ export function Jars({ p, actions, now }: { p: Player; actions: Actions; now: nu
             onCare={() => setCare(slot)}
             onTrait={() => setTraitSlot(slot)}
             onEmpty={() => {
-              if (f?.alive && !window.confirm(`Release ${f.name}? You will not get the coins back.`)) return
-              actions.emptyTank(slot)
+              if (!f) return
+              if (!f.alive) return void actions.bury(slot)
+              if (window.confirm(`Release ${f.name}? Its NFT is burned and the purchase is not refunded.`)) void actions.release(slot)
             }}
             onRename={(n) => actions.rename(slot, n)}
             foodLeft={foodLeft}
@@ -109,7 +112,7 @@ export function Jars({ p, actions, now }: { p: Player; actions: Actions; now: nu
       )}
 
       <Modal open={!!careFish} onClose={() => setCare(null)} title={careFish ? `Care for ${careFish.name}` : ''}>
-        {careFish && care !== null && <CarePanel fish={careFish} p={p} now={now} act={acts[care]} onUse={(id) => use(care, id)} onTrain={(id) => play(care, id, actions.train(care, id))} onRush={(id, cost) => play(care, id, actions.rushTrain(care, id, cost))} onPack={(id) => buyPackAndFeed(care, id)} />}
+        {careFish && care !== null && <CarePanel fish={careFish} p={p} now={now} act={acts[care]} onUse={(id) => use(care, id)} onTrain={(id) => play(care, id, actions.train(care, id))} onRush={(id, hours) => play(care, id, actions.rushTrain(care, id, hours))} />}
       </Modal>
 
       <Modal open={!!traitFish && pendingTraits(traitFish) > 0} onClose={() => setTraitSlot(null)} title={traitFish ? `${traitFish.name} learns a trait` : ''}>
@@ -120,8 +123,8 @@ export function Jars({ p, actions, now }: { p: Player; actions: Actions; now: nu
               {traitOptions(traitFish.id, traitFish.traits).map((t) => (
                 <button
                   key={t.id}
-                  onClick={() => {
-                    if (actions.pickTrait(traitSlot, t.id).ok) setTraitSlot(null)
+                  onClick={async () => {
+                    if ((await actions.pickTrait(traitSlot, t.id)).ok) setTraitSlot(null)
                   }}
                   className="flex items-center gap-4 rounded-xl px-4 py-3 text-left ring-1 ring-line transition-colors hover:bg-gold/10 hover:ring-gold"
                 >
@@ -155,19 +158,21 @@ function TankCard({
   onEmpty,
   onRename,
   foodLeft,
+  connected,
 }: {
+  connected: boolean
   foodLeft: number
   slot: number
   fish: Fish | null
   entry?: Entry
   now: number
   act: CareAct
-  onFeed: () => void
-  onWater: () => void
+  onFeed: () => unknown
+  onWater: () => unknown
   onCare: () => void
   onTrait: () => void
   onEmpty: () => void
-  onRename: (n: string) => void
+  onRename: (n: string) => unknown
 }) {
   const [editing, setEditing] = useState(false)
   const sp = fish ? speciesById(fish.speciesId) : null
@@ -195,7 +200,7 @@ function TankCard({
           <div className="absolute inset-0 z-[3] flex flex-col items-center justify-center gap-3 pt-[10%] text-center">
             <p className="display text-xl text-white/85">Empty jar</p>
             <a href="#shop" className="btn btn-gold btn-sm">
-              Buy a betta
+              {connected ? 'Buy a betta' : 'Browse the bettas'}
             </a>
           </div>
         )}
@@ -325,7 +330,7 @@ function TankCard({
                     <>{foodLeft} food portions</>
                   ) : (
                     <a href="#shop" className="text-bad hover:underline">
-                      out of food
+                      out of food (Feed buys a pack)
                     </a>
                   )}
                 </span>
@@ -349,16 +354,14 @@ function CarePanel({
   onUse,
   onTrain,
   onRush,
-  onPack,
 }: {
   fish: Fish
   p: Player
   now: number
   act: CareAct
-  onUse: (id: string) => Result
-  onTrain: (id: string) => Result
-  onRush: (id: string, cost: number) => Result
-  onPack: (id: string) => Result
+  onUse: (id: string) => Promise<Result>
+  onTrain: (id: string) => Promise<Result>
+  onRush: (id: string, hours: number) => Promise<Result>
 }) {
   // the price is locked when the dialog opens, so the player pays what they agreed to
   const [rush, setRush] = useState<{ id: string; cost: number } | null>(null)
@@ -416,8 +419,8 @@ function CarePanel({
                   <button
                     className="btn btn-coral btn-sm"
                     onClick={() => setRush({ id: t.id, cost })}
-                    disabled={!!rushWhy || p.balance < cost}
-                    title={rushWhy ?? (p.balance < cost ? `Need ${cost} coins` : `Skip the wait for ${cost} coins`)}
+                    disabled={!!rushWhy}
+                    title={rushWhy ?? `Skip the wait: ${cost / RUSH_PER_HOUR} rush hour(s), ${cost} $BETTA (rush hours you already own are used first)`}
                   >
                     <Zap size={13} /> Rush · <span className="num">{cost}</span>
                   </button>
@@ -433,22 +436,22 @@ function CarePanel({
         </div>
         <p className="mt-2 text-xs text-faint">
           {wait > 0
-            ? rushWhy ?? `Resting. Wait it out for free, or rush it for ${RUSH_PER_HOUR} coins per hour left.`
+            ? rushWhy ?? `Resting. Wait it out for free, or rush it for ${RUSH_PER_HOUR} $BETTA per hour left.${p.inventory.rush ? ` You own ${p.inventory.rush} rush hour(s).` : ''}`
             : why ?? 'One session every 8 hours. XP only counts while health is above 60.'}
         </p>
       </div>
 
       <Confirm
         open={!!rush && !!rushing}
-        title="Boost training with coins?"
+        title="Skip the training wait?"
         confirmLabel={
           <>
-            <Zap size={13} /> Yes, pay {rush?.cost} coins
+            <Zap size={13} /> Yes, rush it
           </>
         }
         onCancel={() => setRush(null)}
         onConfirm={() => {
-          if (rush) onRush(rush.id, rush.cost)
+          if (rush) onRush(rush.id, rush.cost / RUSH_PER_HOUR)
           setRush(null)
         }}
       >
@@ -456,12 +459,12 @@ function CarePanel({
           <>
             Are you sure you want to boost <b className="text-text">{fish.name}</b>'s training with{' '}
             <b className="text-gold">
-              {rush.cost} coins
+              {rush.cost} $BETTA
             </b>
             ? This skips the remaining <span className="num text-text">{countdown(wait)}</span> and starts{' '}
             <b className="text-text">{rushing.name}</b> now (+{Math.min(rushing.xp, xpLeftToday(fish, now))} XP).
             <span className="mt-3 block text-xs text-faint">
-              Balance after: <Coin n={p.balance - rush.cost} />. Waiting is free.
+              Rush hours you already own ({p.inventory.rush ?? 0}) are used first; the rest is paid from your wallet. Waiting is free.
             </span>
           </>
         )}
@@ -497,7 +500,7 @@ function CarePanel({
                     <div className="truncate text-xs text-dim">{it.note}</div>
                   </div>
                   {!have && it.packs ? (
-                    <button className="btn btn-ghost btn-sm" onClick={() => onPack(it.id)}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => onUse(it.id)}>
                       Buy {it.packs[0].qty} &amp; feed · <span className="num">{it.packs[0].price}</span>
                     </button>
                   ) : (

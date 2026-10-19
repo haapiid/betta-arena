@@ -5,9 +5,10 @@ import { type Item, type Stat } from './items'
 import { speciesById, type Genome } from './species'
 import { TRAIT_EVERY } from './traits'
 import { hash, mulberry32 } from '../render/color'
+import { env } from '../config'
 
-export const CARE_SPEED = Number(import.meta.env.VITE_CARE_SPEED || 1)
-export const LIFESPAN_DAYS = Number(import.meta.env.VITE_LIFESPAN_DAYS || 60)
+export const CARE_SPEED = Number(env('VITE_CARE_SPEED') || 1)
+export const LIFESPAN_DAYS = Number(env('VITE_LIFESPAN_DAYS') || 60)
 export const MAX_TANKS = 3
 export const MIN_ENTRY_HEALTH = 40
 export const MAX_LEVEL = 30

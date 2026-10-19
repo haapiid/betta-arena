@@ -1,23 +1,27 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { Address } from 'viem'
 import { Arena } from './components/Arena'
 import { Community } from './components/Community'
 import { Leaderboard } from './components/Leaderboard'
 import { Jars } from './components/Jars'
 import { Footer, Header, Hero, HowItWorks } from './components/Layout'
 import { Shop } from './components/Shop'
-import { Toasts, useNow, type Toast } from './components/ui'
-import { fighterOf, openRound, useGame, type Result } from './game/store'
-import { buildField, DIVISIONS } from './game/tournament'
-import { connect, disconnect, short } from './lib/wallet'
+import { Busy, Toasts, useNow, type Toast } from './components/ui'
+import { useGame, type Result } from './game/store'
+import { roundAt } from './game/tournament'
+import { useRoundPot } from './lib/hooks'
+import { connect, disconnect, onAccountsChanged, readable, short } from './lib/wallet'
+import { clearSession, hasSession } from './lib/api'
 
 // two pages: the game ('/') and the community page ('/community')
 const PAGE: 'home' | 'community' = window.location.pathname.replace(/\/+$/, '') === '/community' ? 'community' : 'home'
+const SAVED = 'betta-arena:wallet'
 
 export default function App() {
-  const [addr, setAddr] = useState<string | null>(() => {
+  const [addr, setAddr] = useState<Address | null>(() => {
     try {
-      const a = localStorage.getItem('betta-arena:wallet')
-      return a?.startsWith('0x') ? a : null
+      const a = localStorage.getItem(SAVED)
+      return a && /^0x[0-9a-f]{40}$/.test(a) ? (a as Address) : null
     } catch {
       return null
     }
@@ -28,66 +32,67 @@ export default function App() {
     if (!r.msg) return
     const id = ++tid.current
     setToasts((l) => [...l.slice(-3), { id, ok: r.ok, msg: r.msg }])
-    setTimeout(() => setToasts((l) => l.filter((t) => t.id !== id)), 3600)
+    setTimeout(() => setToasts((l) => l.filter((t) => t.id !== id)), 4200)
   }, [])
 
-  const owner = addr ? short(addr) : 'guest'
-  const { p, actions } = useGame(addr, owner, notify)
+  const { p, actions, busy, signedIn } = useGame(addr, notify)
   const now = useNow(1000)
+  const round = roundAt(now)
+  const pot = useRoundPot(round)
 
-  const round = openRound(p, now)
-  // total pot across all three divisions of the open round
-  const pot = useMemo(
-    () =>
-      DIVISIONS.reduce((sum, d) => {
-        const mine = p.entries
-          .filter((e) => e.n === round && e.div === d.id)
-          .flatMap((e) => {
-            const f = p.tanks.find((t) => t?.id === e.fishId)
-            return f ? [fighterOf(f, owner, e.stake, now)] : []
-          })
-        return sum + buildField(round, d.id, mine).reduce((s, f) => s + f.stake, 0)
-      }, 0),
-    [round, p.entries, p.tanks, owner],
-  )
-
-  const onConnect = async () => {
-    const a = await connect()
-    if (!a) return notify({ ok: false, msg: 'Wallet not connected.' })
+  const remember = (a: Address | null) => {
     setAddr(a)
     try {
-      localStorage.setItem('betta-arena:wallet', a)
+      if (a) localStorage.setItem(SAVED, a)
+      else localStorage.removeItem(SAVED)
     } catch {
       /* ignore */
     }
-    notify({ ok: true, msg: `Connected ${short(a)}. Your jars are saved to this wallet.` })
   }
-  const onDisconnect = async () => {
-    await disconnect()
-    setAddr(null)
+  useEffect(() => onAccountsChanged((a) => remember(a)), [])
+
+  const onConnect = async () => {
     try {
-      localStorage.removeItem('betta-arena:wallet')
-    } catch {
-      /* ignore */
+      const a = await connect()
+      if (!a) return notify({ ok: false, msg: 'Wallet not connected.' })
+      remember(a)
+      notify({ ok: true, msg: `Connected ${short(a)}.` })
+    } catch (e) {
+      notify({ ok: false, msg: readable(e) })
     }
+  }
+  // right after connecting, ask once for the (free) sign-in signature
+  const asked = useRef<string | null>(null)
+  useEffect(() => {
+    if (!addr || hasSession(addr) || asked.current === addr) return
+    asked.current = addr
+    void actions.signIn()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addr])
+
+  const onDisconnect = async () => {
+    if (addr) clearSession(addr)
+    await disconnect()
+    remember(null)
   }
 
   return (
     <>
-      <Header p={p} addr={addr} onConnect={onConnect} onDisconnect={onDisconnect} onFaucet={actions.faucet} now={now} page={PAGE} />
+      <Header p={p} addr={addr} signedIn={signedIn} onConnect={onConnect} onSignIn={actions.signIn} onDisconnect={onDisconnect} page={PAGE} />
       {PAGE === 'community' ? (
-        <Community p={p} now={now} you={owner} />
+        <Community me={addr} />
       ) : (
         <main>
           <Hero p={p} now={now} round={round} pot={pot} />
-          <Jars p={p} actions={actions} now={now} />
-          <Shop p={p} buyFish={actions.buyFish} buyItem={actions.buyItem} buyPack={actions.buyPack} />
-          <Arena p={p} actions={actions} now={now} owner={owner} />
-          <Leaderboard p={p} now={now} you={owner} />
+          <Jars p={p} actions={actions} now={now} connected={!!addr} />
+          <Shop p={p} buyFish={actions.buyFish} buyPack={actions.buyPack} connected={!!addr} />
+          <Arena p={p} actions={actions} now={now} me={addr} />
+          <Leaderboard me={addr} />
           <HowItWorks />
         </main>
       )}
-      <Footer onReset={actions.reset} />
+      <Footer />
+      <Busy text={busy} />
       <Toasts list={toasts} />
     </>
   )

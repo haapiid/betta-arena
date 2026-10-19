@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { ArrowUpRight, BookOpen, CalendarDays, Check, Copy, LineChart, MessagesSquare, Send, ShoppingCart, Sparkles, Trophy } from 'lucide-react'
 import { TankView } from './FishCanvas'
 import { Coin, SYMBOL } from './ui'
-import { useBoard } from './Leaderboard'
-import { ranked } from '../game/leaderboard'
+import { ranked } from './Leaderboard'
+import { useBoard } from '../lib/hooks'
+import { short } from '../lib/wallet'
 import { SPECIES } from '../game/species'
 import { LINKS, TOKEN_ADDRESS } from '../lib/links'
-import type { Player } from '../game/store'
 
 function XLogo({ size = 18 }: { size?: number }) {
   return (
@@ -21,7 +21,7 @@ const CHANNELS = [
   { key: 'telegram', name: 'Telegram', icon: <Send size={18} />, note: 'The main chat. Keepers trade tips, brag and complain about bad luck.' },
   { key: 'discord', name: 'Discord', icon: <MessagesSquare size={18} />, note: 'Breeding talk, bug reports and events.' },
   { key: 'dexscreener', name: 'DexScreener', icon: <LineChart size={18} />, note: `The live ${'$'}${SYMBOL} chart.` },
-  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Buy ${'$'}${SYMBOL} on a decentralised exchange. In-game coins are separate and free.` },
+  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Get ${'$'}${SYMBOL} for fish, food and entry fees.` },
   { key: 'docs', name: 'Docs', icon: <BookOpen size={18} />, note: 'Game rules, tokenomics and roadmap.' },
 ] as const
 
@@ -31,9 +31,9 @@ const EVENTS = [
   { title: 'Community AMA', note: 'Regular voice chats with the team about what ships next.', icon: CalendarDays },
 ]
 
-export function Community({ p, now, you }: { p: Player; now: number; you: string }) {
+export function Community({ me }: { me: string | null }) {
   const [copied, setCopied] = useState(false)
-  const top = ranked(useBoard(p, now, you), 'earned').slice(0, 5)
+  const top = ranked(useBoard(me), 'earned').slice(0, 5)
   const live = CHANNELS.filter((c) => LINKS[c.key]).length
 
   const copy = async () => {
@@ -137,7 +137,7 @@ export function Community({ p, now, you }: { p: Player; now: number; you: string
               {top.map((r, i) => (
                 <li key={r.owner + i} className={`flex items-center gap-4 px-5 py-3 ${r.mine ? 'bg-gold/10' : ''}`}>
                   <span className={`num w-5 text-sm font-semibold ${i === 0 ? 'text-gold' : 'text-faint'}`}>{i + 1}</span>
-                  <span className={`flex-1 truncate font-semibold ${r.mine ? 'text-gold' : ''}`}>{r.owner}</span>
+                  <span className={`flex-1 truncate font-semibold ${r.mine ? 'text-gold' : ''}`}>{short(r.owner)}</span>
                   <span className="text-xs text-dim">{r.titles} title{r.titles === 1 ? "" : "s"}</span>
                   <Coin n={r.earned} className="text-sm" />
                 </li>

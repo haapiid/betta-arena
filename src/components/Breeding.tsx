@@ -8,7 +8,7 @@ import {
   HYBRIDS, MUTATION_CHANCE, phaseEnds, phaseOf, type Breeding,
 } from '../game/breeding'
 import { traitById } from '../game/traits'
-import { DEMO, freeSlot, type Player, type Result } from '../game/store'
+import { freeSlot, type Player, type Result } from '../game/store'
 
 export function SexMark({ sex, className = '' }: { sex: Sex; className?: string }) {
   return (
@@ -32,13 +32,11 @@ export function SpawnCard({
   now,
   onKeep,
   onAbandon,
-  onHatch,
 }: {
   b: Breeding
   now: number
-  onKeep: (i: number) => Result
-  onAbandon: () => Result
-  onHatch: () => Result
+  onKeep: (i: number) => Promise<Result>
+  onAbandon: () => Promise<Result>
 }) {
   const phase = phaseOf(b, now)
   const ends = phaseEnds(b)
@@ -76,13 +74,7 @@ export function SpawnCard({
           </p>
         )}
         <div className="mt-4 flex items-center justify-between text-xs text-faint">
-          {DEMO && phase !== 'fry' ? (
-            <button className="btn btn-ghost btn-sm" onClick={onHatch}>
-              Demo: hatch now
-            </button>
-          ) : (
-            <span />
-          )}
+          <span />
           <button className="hover:text-dim" onClick={() => window.confirm('Empty the spawning jar? The eggs are lost and the fee is not refunded.') && onAbandon()}>
             Abandon spawn
           </button>
@@ -105,12 +97,13 @@ export function SpawnCard({
         title={`Keep ${keep !== null ? b.fry[keep].name : ''}?`}
         confirmLabel="Yes, keep this one"
         onCancel={() => setKeep(null)}
-        onConfirm={() => {
-          if (keep !== null && onKeep(keep).ok) setPick(false)
+        onConfirm={async () => {
+          const k = keep
           setKeep(null)
+          if (k !== null && (await onKeep(k)).ok) setPick(false)
         }}
       >
-        The other two fry will be released. This cannot be undone.
+        The other two fry will be released. Your wallet asks you to confirm the mint of this fry as an NFT (gas only). This cannot be undone.
       </Confirm>
     </article>
   )
@@ -149,7 +142,7 @@ function FryCard({ f, onKeep }: { f: Fish; onKeep: () => void }) {
 }
 
 // pick a pair and start a spawn
-export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStart: (m: number, f: number) => Result }) {
+export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStart: (m: number, f: number) => Promise<Result> }) {
   const fish = p.tanks.map((f, slot) => ({ f, slot })).filter((x): x is { f: Fish; slot: number } => !!x.f && x.f.alive)
   const males = fish.filter((x) => x.f.sex === 'male')
   const females = fish.filter((x) => x.f.sex === 'female')
@@ -170,7 +163,7 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
     cannotBreed(male, now, !!male && entered(male)) ||
     cannotBreed(female, now, !!female && entered(female)) ||
     (spawnJar < 0 && 'You need an empty jar to use as the spawning tank.') ||
-    (p.balance < BREED_FEE && `You need ${BREED_FEE} coins.`) ||
+    (!(p.inventory.breed ?? 0) && p.balance < BREED_FEE && `You need ${BREED_FEE} $BETTA for the breeding fee.`) ||
     null
   const fc = male && female ? forecast(male, female) : null
 
@@ -293,7 +286,7 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
         title="Start breeding?"
         confirmLabel={
           <>
-            <Heart size={13} /> Yes, pay {BREED_FEE} coins
+            <Heart size={13} /> {p.inventory.breed ? 'Yes, start' : `Yes, pay ${BREED_FEE} $BETTA`}
           </>
         }
         onCancel={() => setConfirm(false)}
@@ -304,11 +297,11 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
       >
         Are you sure you want to breed <b className="text-text">{male?.name}</b> ♂ with <b className="text-text">{female?.name}</b> ♀ for{' '}
         <b className="text-gold">
-          {BREED_FEE} coins
+          {BREED_FEE} $BETTA
         </b>
         ? Jar {spawnJar + 1} becomes the spawning tank. Both parents lose {BREED_HEALTH_COST} health and rest for {Math.round(BREED_REST / 86_400_000)} days.
         <span className="mt-3 block text-xs text-faint">
-          Balance after: <Coin n={p.balance - BREED_FEE} />
+          {p.inventory.breed ? 'You already paid a breeding fee; it is used now.' : <>Paid from your wallet. Balance after: <Coin n={p.balance - BREED_FEE} /></>}
         </span>
       </Confirm>
     </div>

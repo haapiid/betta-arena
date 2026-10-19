@@ -1,15 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { X } from 'lucide-react'
+import { LoaderCircle, X } from 'lucide-react'
 import { RARITY_COLOR, type Rarity } from '../game/species'
 
 export const SYMBOL = import.meta.env.VITE_TOKEN_SYMBOL || 'BETTA'
 
-export const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
+// whole numbers stay whole; prize shares can have decimals
+export const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: Number.isInteger(n) ? 0 : 2 })
 
 export function Coin({ n, className = '' }: { n: number; className?: string }) {
   return (
     <span className={`num whitespace-nowrap ${className}`}>
-      {fmt(n)} <span className="text-dim text-[0.8em]">coins</span>
+      {fmt(n)} <span className="text-dim text-[0.8em]">${SYMBOL}</span>
     </span>
   )
 }
@@ -95,7 +96,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   )
 }
 
-// "Are you sure?" before spending coins. Sits above any open modal.
+// "Are you sure?" before spending $BETTA. Sits above any open modal.
 export function Confirm({
   open,
   title,
@@ -160,6 +161,18 @@ export function countdown(ms: number) {
   if (d > 0) return `${d}d ${h}h ${m}m`
   if (h > 0) return `${h}h ${m}m ${sec}s`
   return `${m}m ${sec}s`
+}
+
+// what the app is waiting for (a wallet confirmation, the chain, the server)
+export function Busy({ text }: { text: string | null }) {
+  if (!text) return null
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-20 z-[65] flex justify-center px-4" aria-live="polite">
+      <div className="rise flex items-center gap-2.5 rounded-full border border-gold/40 bg-panel-2/95 px-4 py-2 text-sm text-text shadow-2xl backdrop-blur">
+        <LoaderCircle size={15} className="animate-spin text-gold" /> {text}
+      </div>
+    </div>
+  )
 }
 
 export interface Toast {

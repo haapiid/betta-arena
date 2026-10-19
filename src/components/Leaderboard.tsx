@@ -1,8 +1,14 @@
 import { useMemo, useState } from 'react'
 import { Crown, Medal, Swords, Trophy } from 'lucide-react'
 import { Coin, fmt, SectionHead } from './ui'
-import { board, ranked, SEASON_ROUNDS, type BoardRow, type BoardSort } from '../game/leaderboard'
-import type { Player } from '../game/store'
+import { useBoard, type BoardRow } from '../lib/hooks'
+import { short } from '../lib/wallet'
+
+export const SEASON_ROUNDS = 30 // how many past rounds count
+export type BoardSort = 'earned' | 'titles' | 'wins'
+export function ranked(rows: BoardRow[], by: BoardSort) {
+  return [...rows].sort((a, b) => b[by] - a[by] || b.earned - a.earned || b.wins - a.wins)
+}
 
 const TABS: { id: BoardSort; label: string; icon: typeof Trophy }[] = [
   { id: 'earned', label: 'Top earners', icon: Trophy },
@@ -12,14 +18,9 @@ const TABS: { id: BoardSort; label: string; icon: typeof Trophy }[] = [
 
 const MEDAL = ['text-gold', 'text-[#d6dde6]', 'text-[#d8935a]']
 
-export function useBoard(p: Player, now: number, you: string) {
-  // recompute once a minute, or when the player's results change
-  return useMemo(() => board(p, now, you), [p.history, you, Math.floor(now / 60000)])
-}
-
-export function Leaderboard({ p, now, you }: { p: Player; now: number; you: string }) {
+export function Leaderboard({ me }: { me: string | null }) {
   const [by, setBy] = useState<BoardSort>('earned')
-  const rows = useBoard(p, now, you)
+  const rows = useBoard(me)
   const list = useMemo(() => ranked(rows, by), [rows, by])
   const myRank = list.findIndex((r) => r.mine)
   const top = list.slice(0, 10)
@@ -28,7 +29,7 @@ export function Leaderboard({ p, now, you }: { p: Player; now: number; you: stri
     <section id="leaderboard" className="border-t border-line-soft">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
         <SectionHead eyebrow={`Leaderboard · last ${SEASON_ROUNDS} rounds`} title="The best keepers in the arena.">
-          Every finished round in every division counts. Earnings are prize money (champion, runner-up and semifinalists); titles are championships; fight wins count every bracket match won. Keepers tagged NPC are house fish that fill the brackets.
+          Every finished round in every division counts, straight from the arena contract. Earnings are $BETTA prize money (champion, runner-up and semifinalists); titles are championships; fight wins count every bracket match won.
         </SectionHead>
 
         <div className="mb-6 inline-flex rounded-full border border-line p-1" role="tablist">
@@ -82,7 +83,7 @@ function Row({ r, rank }: { r: BoardRow; rank: number }) {
         {rank + 1}
       </span>
       <span className={`truncate font-semibold ${r.mine ? 'text-gold' : ''}`}>
-        {r.owner}
+        {short(r.owner)}
         {r.mine && <span className="ml-2 rounded bg-gold px-1.5 py-0.5 text-[0.62rem] font-bold text-black">YOU</span>}
       </span>
       <span className="text-right md:order-none">

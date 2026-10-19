@@ -1,42 +1,40 @@
 import { useMemo, useState } from 'react'
 import { Crown, Lock, Play, RotateCcw, Swords, Trophy } from 'lucide-react'
 import { ArenaView } from './FishCanvas'
-import { Coin, countdown, Modal, SectionHead } from './ui'
+import { Coin, countdown, fmt, Modal, SectionHead } from './ui'
 import { breedNameOf, effective, imageOf, levelOf, MIN_ENTRY_HEALTH, power } from '../game/fish'
 import { speciesById } from '../game/species'
 import { traitById } from '../game/traits'
-import type { Fighter } from '../game/battle'
-import { DEMO, fighterOf, openRound, type Player, type Result } from '../game/store'
+import type { Entry, Player, Result } from '../game/store'
 import {
-  BRACKET, buildField, DIVISIONS, divisionById, divisionFor, endsAt, entriesOpen, FEE, isBye, locksAt, MAX_PLAYER_ENTRIES, MIN_FIELD, NPC_FILL, npcField,
-  PERIOD_DAYS, PRIZE_SPLIT, prizesOf, replay, roundAt, roundName, runTournament, type DivisionId, type TournamentResult,
+  BRACKET, DIVISIONS, divisionById, divisionFor, endsAt, entriesOpen, FEE, isBye, locksAt, MAX_PLAYER_ENTRIES, MIN_FIELD,
+  PERIOD_DAYS, PRIZE_SPLIT, prizesOf, replay, roundAt, roundName, startsAt, type DivisionId, type TournamentResult,
 } from '../game/tournament'
+import { toFighter, useField, useResults } from '../lib/hooks'
+import { short } from '../lib/wallet'
+import { txUrl } from '../lib/net'
 
 interface Actions {
-  enter: (slot: number) => Result
-  withdraw: (fishId: string) => Result
-  runNow: () => Result
+  enter: (slot: number) => Promise<Result>
+  withdraw: (e: Entry) => Promise<Result>
 }
 
-export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions; now: number; owner: string }) {
-  const n = openRound(p, now)
+const who = (f: { mine: boolean; owner: string }) => (f.mine ? 'you' : short(f.owner))
+
+export function Arena({ p, actions, now, me }: { p: Player; actions: Actions; now: number; me: string | null }) {
+  const n = roundAt(now)
   const firstFish = p.tanks.find((t) => t?.alive)
   const [divId, setDivId] = useState<DivisionId>(firstFish ? divisionFor(levelOf(firstFish)).id : 'rookie')
   const div = divisionById(divId)
   const mineAll = p.entries.filter((e) => e.n === n)
   const mine = mineAll.filter((e) => e.div === divId)
 
-  const field = useMemo(() => {
-    const fs: Fighter[] = []
-    for (const e of mine) {
-      const f = p.tanks.find((t) => t?.id === e.fishId)
-      if (f) fs.push(fighterOf(f, owner, e.stake, now))
-    }
-    return buildField(n, divId, fs)
-  }, [n, divId, JSON.stringify(mine), p.tanks, owner, Math.floor(now / 60000)])
+  const raw = useField(n, div.index)
+  const field = useMemo(() => raw.map((e) => toFighter(e, me)), [raw, me])
   const pot = field.reduce((s, f) => s + f.stake, 0)
-  const prizePool = pot - Math.round(pot * FEE)
+  const prizePool = pot - Math.floor(pot * FEE)
   const open = entriesOpen(n, now)
+  const notYet = now < startsAt(n)
 
   const living = p.tanks.map((f, slot) => ({ f, slot })).filter(({ f }) => f && f.alive && f.sex !== 'female' && !mineAll.some((e) => e.fishId === f.id)) as {
     f: NonNullable<Player['tanks'][number]>
@@ -47,13 +45,8 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
   const [slot, setSlot] = useState<number | null>(null)
   const chosen = eligible.find((e) => e.slot === slot) ?? eligible[0]
 
-  // results: the player's own, plus the last public round of this division
-  const results = useMemo(() => {
-    const prev = roundAt(now) - 1
-    const list = p.history.filter((r) => r.div === divId)
-    if (prev >= 1 && !list.some((r) => r.n === prev)) list.push(runTournament(prev, divId, npcField(prev, divId), endsAt(prev)))
-    return list.sort((a, b) => b.n - a.n || b.resolvedAt - a.resolvedAt)
-  }, [p.history, divId, Math.floor(now / 60000)])
+  // finished brackets of this division, from the chain via the game server
+  const results = useResults(div.index, me)
   const [sel, setSel] = useState(0)
   const res = results[Math.min(sel, results.length - 1)]
   const [watch, setWatch] = useState<{ res: TournamentResult; r: number; i: number } | null>(null)
@@ -61,7 +54,7 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
   return (
     <section id="arena" className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
       <SectionHead eyebrow={`The arena · every ${PERIOD_DAYS} days`} title={<>Enter your fish. It does the rest.</>}>
-        Three divisions by level, up to {BRACKET} fish each, single elimination. Every fish pays the same entry fee and registration closes an hour before the bell. Nobody presses anything: each fight plays out from attack, defense, beauty, traits and how healthy the fish is. After a {Math.round(FEE * 100)}% arena burn the pot pays the top four: {PRIZE_SPLIT[0] * 100}% / {PRIZE_SPLIT[1] * 100}% / {PRIZE_SPLIT[2] * 100}% + {PRIZE_SPLIT[2] * 100}%.
+        Three divisions by level, up to {BRACKET} keepers' fish each, single elimination. Every fish pays the same entry fee in $BETTA, held by the arena contract, and registration closes an hour before the bell. The draw and every fight run on chain from attack, defense, beauty, traits and how healthy the fish is. After a {Math.round(FEE * 100)}% arena burn the pot pays the top four: {PRIZE_SPLIT[0] * 100}% / {PRIZE_SPLIT[1] * 100}% / {PRIZE_SPLIT[2] * 100}% + {PRIZE_SPLIT[2] * 100}%.
       </SectionHead>
 
       <div className="mb-6 grid gap-2 sm:grid-cols-3" role="tablist">
@@ -93,14 +86,16 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="eyebrow">
-                Round #{n} · {div.name} · {open ? 'open' : 'locked'}
+                Round #{n} · {div.name} · {notYet ? 'opens soon' : open ? 'open' : 'locked'}
               </div>
               <div className="display mt-1 text-4xl font-semibold sm:text-5xl">
-                <span className="num text-[0.8em]">{countdown(endsAt(n) - now)}</span>
+                <span className="num text-[0.8em]">{countdown((notYet ? startsAt(n) : endsAt(n)) - now)}</span>
               </div>
               <div className="mt-1 text-sm text-dim">
-                until the bell ·{' '}
-                {open ? (
+                {notYet ? 'until the season opens' : 'until the bell'} ·{' '}
+                {notYet ? (
+                  'registration opens with round 1'
+                ) : open ? (
                   <>
                     registration closes in <span className="num">{countdown(locksAt(n) - now)}</span>
                   </>
@@ -123,7 +118,11 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
 
           <div className="my-6 h-px bg-line-soft" />
 
-          {!open ? (
+          {!me ? (
+            <p className="text-sm text-dim">Connect your wallet to enter a fish. Entry fees and prizes are paid in $BETTA by the arena contract.</p>
+          ) : notYet ? (
+            <p className="text-sm text-dim">The first round opens in {countdown(startsAt(n) - now)}. Get a fish ready in the meantime.</p>
+          ) : !open ? (
             <p className="flex items-start gap-2 text-sm text-dim">
               <Lock size={15} className="mt-0.5 shrink-0 text-gold" />
               Registration for round #{n} is closed and the bracket is locked: no new entries, no withdrawals. Round #{n + 1} opens as soon as the bell rings.
@@ -164,10 +163,10 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
                 </div>
               </div>
               <p className="text-xs text-faint">
-                You can withdraw for a full refund until registration closes. After that the entry is locked{!NPC_FILL && `, and a division with fewer than ${MIN_FIELD} fish is called off with fees refunded`}.
+                You can withdraw for a full refund until registration closes. After that the entry is locked. A division with fewer than {MIN_FIELD} fish is called off and every fee is refunded.
               </p>
               <button className="btn btn-coral w-full sm:w-auto sm:justify-self-start" disabled={!chosen || chosen.f.health < MIN_ENTRY_HEALTH || div.fee > p.balance}>
-                <Swords size={16} /> Enter {chosen?.f.name ?? ''} · fee <span className="num">{div.fee}</span> coins
+                <Swords size={16} /> Enter {chosen?.f.name ?? ''} · fee <span className="num">{div.fee}</span> $BETTA
               </button>
             </form>
           ) : (
@@ -197,7 +196,7 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
                         <Coin n={e.stake} className="text-sm" />
                       </span>
                       {open ? (
-                        <button className="text-xs text-faint hover:text-text" onClick={() => actions.withdraw(e.fishId)}>
+                        <button className="text-xs text-faint hover:text-text" onClick={() => actions.withdraw(e)}>
                           Withdraw
                         </button>
                       ) : (
@@ -209,11 +208,6 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
                   )
                 })}
               </div>
-              {DEMO && (
-                <button className="btn btn-gold mt-4" onClick={() => actions.runNow()}>
-                  <Play size={15} /> Demo: ring the bell now
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -221,10 +215,11 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
         <div className="card p-5 sm:p-7">
           <div className="mb-4 flex items-baseline justify-between">
             <div className="eyebrow">
-              {div.name} field · {field.length} fish{field.length < MIN_FIELD && ` · needs ${MIN_FIELD}`}
+              {div.name} field · {field.length}/{BRACKET} fish{field.length < MIN_FIELD && ` · needs ${MIN_FIELD}`}
             </div>
             <div className="text-xs text-faint">sorted by power</div>
           </div>
+          {field.length === 0 && <p className="text-sm text-dim">No fish entered yet this round. Be the first.</p>}
           <ol className="grid gap-1">
             {[...field]
               .sort((a, b) => power(b) - power(a))
@@ -234,7 +229,7 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
                   <span className="min-w-0 truncate">
                     <span className={f.mine ? 'font-semibold text-gold' : 'font-medium'}>{f.name}</span> <span className="num text-xs text-faint">Lv{f.level}</span>{' '}
                     <span className="text-dim">
-                      · {speciesById(f.speciesId).name} · {f.mine ? 'you' : f.owner}
+                      · {speciesById(f.speciesId).name} · {who(f)}
                     </span>
                   </span>
                   <span className="num text-xs text-dim">
@@ -253,7 +248,7 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
             {results.slice(0, 8).map((r, i) => (
               <button key={`${r.n}-${r.resolvedAt}`} onClick={() => setSel(i)} className={`btn btn-sm ${i === sel ? 'btn-gold' : 'btn-ghost'}`}>
                 #{r.n}
-                {r.myStake > 0 && (r.fighters[r.champion].mine ? ' 🏆' : r.myPayout > 0 ? ' 🥈' : ' · you')}
+                {r.fighters.some((f) => f.mine) && (r.fighters[r.champion].mine ? ' 🏆' : r.prizes.some((z) => r.fighters[z.fighter].mine) ? ' 🥈' : ' · you')}
               </button>
             ))}
           </div>
@@ -288,7 +283,17 @@ function ResultView({ res, onWatch }: { res: TournamentResult; onWatch: (r: numb
           <div className="display text-3xl font-semibold">
             {champ.name} <span className="text-lg text-dim">· Lv {champ.level} {sp.name}</span>
           </div>
-          <div className="text-sm text-dim">owned by {champ.mine ? 'you' : champ.owner}</div>
+          <div className="text-sm text-dim">
+            owned by {who(champ)}
+            {res.tx && txUrl(res.tx) && (
+              <>
+                {' '}·{' '}
+                <a className="hover:text-text" href={txUrl(res.tx)} target="_blank" rel="noopener noreferrer">
+                  settled on chain ↗
+                </a>
+              </>
+            )}
+          </div>
         </div>
         <div className="text-right">
           <div className="eyebrow">Took home</div>
@@ -296,8 +301,7 @@ function ResultView({ res, onWatch }: { res: TournamentResult; onWatch: (r: numb
             <Coin n={prizes[0].amount} />
           </div>
           <div className="text-xs text-faint">
-            pot {res.pot} · burned {res.fee}
-            {res.myStake > 0 && <> · your fees {res.myStake}</>}
+            pot {fmt(res.pot)} · burned {fmt(res.fee)}
           </div>
         </div>
       </div>
@@ -308,7 +312,7 @@ function ResultView({ res, onWatch }: { res: TournamentResult; onWatch: (r: numb
             const f = res.fighters[pz.fighter]
             return (
               <span key={pz.fighter} className={`rounded-full px-3 py-1 text-xs ring-1 ${f.mine ? 'text-gold ring-gold/60' : 'text-dim ring-line-soft'}`}>
-                {PLACE[pz.place]} · <span className="font-semibold">{f.name}</span> ({f.mine ? 'you' : f.owner}) · <Coin n={pz.amount} />
+                {PLACE[pz.place]} · <span className="font-semibold">{f.name}</span> ({who(f)}) · <Coin n={pz.amount} />
               </span>
             )
           })}
@@ -329,7 +333,7 @@ function ResultView({ res, onWatch }: { res: TournamentResult; onWatch: (r: numb
                         <div className="truncate px-1 py-0.5">
                           <span className={A.mine ? 'font-semibold text-gold' : 'font-medium'}>{A.name}</span>
                           <span className="ml-1 text-[0.7rem] text-faint">
-                            Lv{A.level} · {A.mine ? 'you' : A.owner}
+                            Lv{A.level} · {who(A)}
                           </span>
                         </div>
                         <div className="px-1 py-0.5 text-faint italic">bye, goes through</div>
@@ -350,7 +354,7 @@ function ResultView({ res, onWatch }: { res: TournamentResult; onWatch: (r: numb
                               {won && r === last && <Crown size={11} className="mr-1 inline text-gold" />}
                               <span className={f.mine ? 'font-semibold text-gold' : won ? 'font-medium' : ''}>{f.name}</span>
                               <span className="ml-1 text-[0.7rem] text-faint">
-                                Lv{f.level} · {f.mine ? 'you' : f.owner}
+                                Lv{f.level} · {who(f)}
                               </span>
                             </span>
                           </div>
@@ -393,7 +397,7 @@ function Replay({ res, r, i }: { res: TournamentResult; r: number; i: number }) 
               {f.name} <span className="num text-sm text-dim">Lv {f.level}</span>
             </div>
             <div className="truncate text-xs text-dim">
-              {speciesById(f.speciesId).name} · {f.mine ? 'you' : f.owner} ·{' '}
+              {speciesById(f.speciesId).name} · {who(f)} ·{' '}
               <span className="num">
                 {f.attack}/{f.defense}/{f.beauty}
               </span>
