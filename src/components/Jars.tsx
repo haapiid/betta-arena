@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Droplets, Dumbbell, Pencil, Skull, Sparkles, Swords, Utensils, Zap } from 'lucide-react'
 import { TankView, type CareAct } from './FishCanvas'
-import { Coin, Confirm, countdown, Meter, meterColor, Modal, SYMBOL, RarityTag, SectionHead, StatChips } from './ui'
+import { Coin, Confirm, countdown, Meter, meterColor, Modal, RarityTag, SectionHead, StatChips } from './ui'
 import {
   activeBuffs, ageLabel, canRush, canTrain, rushCost, DAILY_XP_CAP, daysLeft, effective, levelInfo, MAX_LEVEL, pendingTraits, power, stageOf, trainReadyIn,
   breedNameOf, imageOf, RUSH_PER_HOUR, TRAININGS, xpLeftToday, type Fish,
@@ -417,7 +417,7 @@ function CarePanel({
                     className="btn btn-coral btn-sm"
                     onClick={() => setRush({ id: t.id, cost })}
                     disabled={!!rushWhy || p.balance < cost}
-                    title={rushWhy ?? (p.balance < cost ? `Need ${cost} coins` : `Skip the wait for ${cost} $${SYMBOL}`)}
+                    title={rushWhy ?? (p.balance < cost ? `Need ${cost} coins` : `Skip the wait for ${cost} coins`)}
                   >
                     <Zap size={13} /> Rush · <span className="num">{cost}</span>
                   </button>
@@ -433,7 +433,7 @@ function CarePanel({
         </div>
         <p className="mt-2 text-xs text-faint">
           {wait > 0
-            ? rushWhy ?? `Resting. Wait it out for free, or rush it for ${RUSH_PER_HOUR} $${SYMBOL} per hour left.`
+            ? rushWhy ?? `Resting. Wait it out for free, or rush it for ${RUSH_PER_HOUR} coins per hour left.`
             : why ?? 'One session every 8 hours. XP only counts while health is above 60.'}
         </p>
       </div>
@@ -443,7 +443,7 @@ function CarePanel({
         title="Boost training with coins?"
         confirmLabel={
           <>
-            <Zap size={13} /> Yes, pay {rush?.cost} ${SYMBOL}
+            <Zap size={13} /> Yes, pay {rush?.cost} coins
           </>
         }
         onCancel={() => setRush(null)}
@@ -456,7 +456,7 @@ function CarePanel({
           <>
             Are you sure you want to boost <b className="text-text">{fish.name}</b>'s training with{' '}
             <b className="text-gold">
-              {rush.cost} ${SYMBOL}
+              {rush.cost} coins
             </b>
             ? This skips the remaining <span className="num text-text">{countdown(wait)}</span> and starts{' '}
             <b className="text-text">{rushing.name}</b> now (+{Math.min(rushing.xp, xpLeftToday(fish, now))} XP).

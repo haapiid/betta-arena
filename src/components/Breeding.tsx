@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Egg, Heart, Sparkles } from 'lucide-react'
 import { Portrait, TankView } from './FishCanvas'
-import { Coin, Confirm, countdown, Modal, StatChips, SYMBOL } from './ui'
+import { Coin, Confirm, countdown, Modal, StatChips } from './ui'
 import { breedNameOf, levelOf, type Fish, type Sex } from '../game/fish'
 import {
   BREED_BURN, BREED_FEE, BREED_HEALTH_COST, BREED_MIN_HEALTH, BREED_MIN_LEVEL, BREED_REST, cannotBreed, forecast, INHERIT_TRAIT_CHANCE, MAX_BREEDS,
@@ -170,7 +170,7 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
     cannotBreed(male, now, !!male && entered(male)) ||
     cannotBreed(female, now, !!female && entered(female)) ||
     (spawnJar < 0 && 'You need an empty jar to use as the spawning tank.') ||
-    (p.balance < BREED_FEE && `You need ${BREED_FEE} ${SYMBOL}.`) ||
+    (p.balance < BREED_FEE && `You need ${BREED_FEE} coins.`) ||
     null
   const fc = male && female ? forecast(male, female) : null
 
@@ -293,7 +293,7 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
         title="Start breeding?"
         confirmLabel={
           <>
-            <Heart size={13} /> Yes, pay {BREED_FEE} ${SYMBOL}
+            <Heart size={13} /> Yes, pay {BREED_FEE} coins
           </>
         }
         onCancel={() => setConfirm(false)}
@@ -304,7 +304,7 @@ export function BreedPanel({ p, now, onStart }: { p: Player; now: number; onStar
       >
         Are you sure you want to breed <b className="text-text">{male?.name}</b> ♂ with <b className="text-text">{female?.name}</b> ♀ for{' '}
         <b className="text-gold">
-          {BREED_FEE} ${SYMBOL}
+          {BREED_FEE} coins
         </b>
         ? Jar {spawnJar + 1} becomes the spawning tank. Both parents lose {BREED_HEALTH_COST} health and rest for {Math.round(BREED_REST / 86_400_000)} days.
         <span className="mt-3 block text-xs text-faint">

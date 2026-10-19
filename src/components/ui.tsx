@@ -9,7 +9,7 @@ export const fmt = (n: number) => Math.round(n).toLocaleString('en-US')
 export function Coin({ n, className = '' }: { n: number; className?: string }) {
   return (
     <span className={`num whitespace-nowrap ${className}`}>
-      {fmt(n)} <span className="text-dim text-[0.8em]">${SYMBOL}</span>
+      {fmt(n)} <span className="text-dim text-[0.8em]">coins</span>
     </span>
   )
 }

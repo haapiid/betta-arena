@@ -108,5 +108,6 @@ other entrants are NPCs (`VITE_NPC_FILL=true`). The wallet is only used as an id
 3. Keep fish state on a server or on chain so it cannot be edited through localStorage.
 4. Check the law: betting real money can count as gambling in many countries, Indonesia included.
 
-`.env`: `VITE_DEMO_MODE=false` hides the faucet and "ring the bell now". `VITE_CARE_SPEED` speeds up
+`.env`: `VITE_SEASON_START` (ISO date, UTC) is when round 1 starts; set it to the launch time so the
+season and the leaderboard start empty. `VITE_DEMO_MODE=true` shows the faucet and "ring the bell now". `VITE_CARE_SPEED` speeds up
 hunger, water, ageing and cooldowns for testing (e.g. `60` = one minute feels like an hour).

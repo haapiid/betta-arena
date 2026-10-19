@@ -28,7 +28,7 @@ export function Leaderboard({ p, now, you }: { p: Player; now: number; you: stri
     <section id="leaderboard" className="border-t border-line-soft">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
         <SectionHead eyebrow={`Leaderboard · last ${SEASON_ROUNDS} rounds`} title="The best keepers in the arena.">
-          Every finished round in every division counts. Earnings are pots taken home as champion; titles are championships; fight wins count every bracket match won.
+          Every finished round in every division counts. Earnings are prize money (champion, runner-up and semifinalists); titles are championships; fight wins count every bracket match won. Keepers tagged NPC are house fish that fill the brackets.
         </SectionHead>
 
         <div className="mb-6 inline-flex rounded-full border border-line p-1" role="tablist">
@@ -64,7 +64,8 @@ export function Leaderboard({ p, now, you }: { p: Player; now: number; you: stri
               <Row r={list[myRank]} rank={myRank} />
             </div>
           )}
-          {myRank < 0 && <p className="border-t border-line-soft px-5 py-4 text-sm text-dim">You are not on the board yet. Enter a fish in the arena and win a match to get ranked.</p>}
+          {list.length === 0 && <p className="px-5 py-6 text-sm text-dim">The season has just started. The board fills up after the first round's bell.</p>}
+          {list.length > 0 && myRank < 0 && <p className="border-t border-line-soft px-5 py-4 text-sm text-dim">You are not on the board yet. Enter a fish in the arena and win a match to get ranked.</p>}
         </div>
       </div>
     </section>

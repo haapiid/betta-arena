@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Crown, Lock, Play, RotateCcw, Swords, Trophy } from 'lucide-react'
 import { ArenaView } from './FishCanvas'
-import { Coin, countdown, Modal, SectionHead, SYMBOL } from './ui'
+import { Coin, countdown, Modal, SectionHead } from './ui'
 import { breedNameOf, effective, imageOf, levelOf, MIN_ENTRY_HEALTH, power } from '../game/fish'
 import { speciesById } from '../game/species'
 import { traitById } from '../game/traits'
@@ -167,7 +167,7 @@ export function Arena({ p, actions, now, owner }: { p: Player; actions: Actions;
                 You can withdraw for a full refund until registration closes. After that the entry is locked{!NPC_FILL && `, and a division with fewer than ${MIN_FIELD} fish is called off with fees refunded`}.
               </p>
               <button className="btn btn-coral w-full sm:w-auto sm:justify-self-start" disabled={!chosen || chosen.f.health < MIN_ENTRY_HEALTH || div.fee > p.balance}>
-                <Swords size={16} /> Enter {chosen?.f.name ?? ''} · fee <span className="num">{div.fee}</span> ${SYMBOL}
+                <Swords size={16} /> Enter {chosen?.f.name ?? ''} · fee <span className="num">{div.fee}</span> coins
               </button>
             </form>
           ) : (

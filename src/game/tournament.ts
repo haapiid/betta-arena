@@ -11,8 +11,10 @@ import { hash, mulberry32 } from '../render/color'
 
 export const PERIOD_DAYS = Number(import.meta.env.VITE_TOURNAMENT_DAYS || 3)
 export const PERIOD = PERIOD_DAYS * 86_400_000
-// round 1 ended 1 Oct 2026 13:00 UTC; each round after that ends PERIOD later
-export const ANCHOR = Date.UTC(2026, 9, 1, 13, 0, 0)
+// round 1 starts at the season start (VITE_SEASON_START, an ISO date such as 2026-10-25T13:00:00Z);
+// each round after that starts PERIOD later. No results exist from before the season start.
+const SEASON_START = Date.parse(import.meta.env.VITE_SEASON_START || '')
+export const ANCHOR = Number.isFinite(SEASON_START) ? SEASON_START : Date.UTC(2026, 9, 1, 13, 0, 0)
 export const BRACKET = 16 // most fish in one bracket
 export const MIN_FIELD = 4 // fewer entrants than this and the round is called off, fees refunded
 export const FEE = 0.05
@@ -45,11 +47,12 @@ export const roundAt = (now: number) => Math.max(1, Math.floor((now - ANCHOR) / 
 export const locksAt = (n: number) => endsAt(n) - ENTRY_LOCK
 export const entriesOpen = (n: number, now: number) => now < locksAt(n)
 
+// house keepers that fill the brackets; shown with an NPC tag so nobody mistakes them for players
 const HANDLES = [
-  'uncle_betta', 'pond.king', 'bettaholic', 'hm_breeder', 'fightclub.eth', 'plakat_pete', 'glass_jar', 'ketapang_queen',
-  'madura_fins', 'thai_breeder', 'red_devil', 'aquascape.io', 'larva_lord', 'almond_leaf', 'crowntail_carl', 'coffee_and_fins',
-  'arena_regular', 'samurai_dojo', 'bird_market', 'nemo_hunter',
-]
+  'Uncle Betta', 'Pond King', 'Bettaholic', 'HM Breeder', 'Fight Club', 'Plakat Pete', 'Glass Jar', 'Ketapang Queen',
+  'Madura Fins', 'Thai Breeder', 'Red Devil', 'Aquascaper', 'Larva Lord', 'Almond Leaf', 'Crowntail Carl', 'Coffee & Fins',
+  'Arena Regular', 'Samurai Dojo', 'Bird Market', 'Nemo Hunter',
+].map((h) => `${h} (NPC)`)
 const FISH_NAMES = ['Thunder', 'Big Shot', 'Hawk', 'Ghost', 'Champ', 'Boss', 'Sultan', 'Brutus', 'Cobra', 'Typhoon', 'Ronin', 'Bandit', 'Old Man', 'Komodo', 'Ninja', 'Fortress']
 
 export interface MatchResult {

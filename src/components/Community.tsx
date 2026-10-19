@@ -21,7 +21,7 @@ const CHANNELS = [
   { key: 'telegram', name: 'Telegram', icon: <Send size={18} />, note: 'The main chat. Keepers trade tips, brag and complain about bad luck.' },
   { key: 'discord', name: 'Discord', icon: <MessagesSquare size={18} />, note: 'Breeding talk, bug reports and events.' },
   { key: 'dexscreener', name: 'DexScreener', icon: <LineChart size={18} />, note: `The live ${'$'}${SYMBOL} chart.` },
-  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: 'Get coins for fish, food and stakes.' },
+  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Buy ${'$'}${SYMBOL} on a decentralised exchange. In-game coins are separate and free.` },
   { key: 'docs', name: 'Docs', icon: <BookOpen size={18} />, note: 'Game rules, tokenomics and roadmap.' },
 ] as const
 
@@ -132,7 +132,8 @@ export function Community({ p, now, you }: { p: Player; now: number; you: string
           <div>
             <div className="eyebrow mb-2">Top keepers</div>
             <h2 className="display mb-6 text-[clamp(1.8rem,3.6vw,2.6rem)] font-semibold">This season's earners.</h2>
-            <ol className="card divide-y divide-line-soft/60">
+            {top.length === 0 && <p className="card px-5 py-4 text-sm text-dim">No rounds finished yet this season. The first champions appear after the first bell.</p>}
+            <ol className="card divide-y divide-line-soft/60 empty:hidden">
               {top.map((r, i) => (
                 <li key={r.owner + i} className={`flex items-center gap-4 px-5 py-3 ${r.mine ? 'bg-gold/10' : ''}`}>
                   <span className={`num w-5 text-sm font-semibold ${i === 0 ? 'text-gold' : 'text-faint'}`}>{i + 1}</span>
