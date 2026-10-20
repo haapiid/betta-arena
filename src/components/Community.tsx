@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { ArrowUpRight, BookOpen, CalendarDays, Check, Copy, LineChart, ShoppingCart, Sparkles, Trophy } from 'lucide-react'
 import { TankView } from './FishCanvas'
-import { Coin, SYMBOL } from './ui'
-import { ranked } from './Leaderboard'
-import { useBoard } from '../lib/hooks'
-import { short } from '../lib/wallet'
+import { SYMBOL } from './ui'
+import { compact, short, type Status } from '../lib/feed'
 import { SPECIES } from '../game/species'
 import { LINKS, TOKEN_ADDRESS } from '../lib/links'
 
@@ -19,19 +17,19 @@ function XLogo({ size = 18 }: { size?: number }) {
 const CHANNELS = [
   { key: 'x', name: 'X (Twitter)', icon: <XLogo />, note: 'Announcements, round results, fish of the week, and where keepers talk.' },
   { key: 'dexscreener', name: 'DexScreener', icon: <LineChart size={18} />, note: `The live ${'$'}${SYMBOL} chart.` },
-  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Get ${'$'}${SYMBOL} for fish, food and entry fees.` },
+  { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Buy ${'$'}${SYMBOL} on Pons. Every buy is a fight.` },
   { key: 'docs', name: 'Docs', icon: <BookOpen size={18} />, note: 'Game rules, tokenomics and roadmap.' },
 ] as const
 
 const EVENTS = [
   { title: 'Weekly Show Bench', note: 'A beauty-only contest judged on flare and colour. No fighting, no wounds.', icon: Sparkles },
-  { title: 'Keeper of the Month', note: 'The top earner of the month gets a featured spot and a rare juvenile.', icon: Trophy },
+  { title: 'Longest reign', note: 'The fish that holds the belt longest each month gets its fight card posted on X.', icon: Trophy },
   { title: 'AMA on X Spaces', note: 'Regular live talks with the team on X about what ships next.', icon: CalendarDays },
 ]
 
-export function Community({ me }: { me: string | null }) {
+export function Community({ status }: { status: Status }) {
   const [copied, setCopied] = useState(false)
-  const top = ranked(useBoard(me), 'earned').slice(0, 5)
+  const top = status.shelf.slice(0, 5)
   const live = CHANNELS.filter((c) => LINKS[c.key]).length
 
   const copy = async () => {
@@ -66,8 +64,8 @@ export function Community({ me }: { me: string | null }) {
               ) : (
                 <span className="btn btn-gold pointer-events-none opacity-60">X account opening soon</span>
               )}
-              <a href="/#leaderboard" className="btn btn-ghost">
-                See the leaderboard
+              <a href="/#ring" className="btn btn-ghost">
+                Watch the ring
               </a>
             </div>
           </div>
@@ -128,21 +126,23 @@ export function Community({ me }: { me: string | null }) {
       <section id="c-keepers" className="border-t border-line-soft bg-deep/25">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-10 lg:grid-cols-[1fr_1.1fr] lg:px-16">
           <div>
-            <div className="eyebrow mb-2">Top keepers</div>
-            <h2 className="display mb-6 text-[clamp(1.8rem,3.6vw,2.6rem)] font-semibold">This season's earners.</h2>
-            {top.length === 0 && <p className="card px-5 py-4 text-sm text-dim">No rounds finished yet this season. The first champions appear after the first bell.</p>}
+            <div className="eyebrow mb-2">The shelf</div>
+            <h2 className="display mb-6 text-[clamp(1.8rem,3.6vw,2.6rem)] font-semibold">Biggest keepers who never sold.</h2>
+            {top.length === 0 && <p className="card px-5 py-4 text-sm text-dim">The shelf is empty. The first buyers fill it.</p>}
             <ol className="card divide-y divide-line-soft/60 empty:hidden">
               {top.map((r, i) => (
-                <li key={r.owner + i} className={`flex items-center gap-4 px-5 py-3 ${r.mine ? 'bg-gold/10' : ''}`}>
-                  <span className={`num w-5 text-sm font-semibold ${i === 0 ? 'text-gold' : 'text-faint'}`}>{i + 1}</span>
-                  <span className={`flex-1 truncate font-semibold ${r.mine ? 'text-gold' : ''}`}>{short(r.owner)}</span>
-                  <span className="text-xs text-dim">{r.titles} title{r.titles === 1 ? "" : "s"}</span>
-                  <Coin n={r.earned} className="text-sm" />
+                <li key={r.addr} className="flex items-center gap-4 px-5 py-3">
+                  <span className={`num w-5 text-sm font-semibold ${i === 0 ? 'text-gold' : 'text-faint'}`}>{r.rank}</span>
+                  <span className="num flex-1 truncate font-semibold">{short(r.addr)}</span>
+                  <span className="text-xs text-dim">
+                    {r.fights} fight{r.fights === 1 ? '' : 's'}, {r.wins} won
+                  </span>
+                  <span className="num text-sm">{compact(r.balance)}</span>
                 </li>
               ))}
             </ol>
-            <a href="/#leaderboard" className="mt-4 inline-block text-sm text-dim hover:text-text">
-              Full leaderboard →
+            <a href="/#shelf" className="mt-4 inline-block text-sm text-dim hover:text-text">
+              The whole shelf
             </a>
           </div>
           <div>

@@ -1,3 +1,5 @@
+> **Arsip.** Rencana ini untuk versi game on-chain (NFT, toko, turnamen) yang sekarang ada di branch `game-onchain`. Versi yang dipakai sekarang adalah memecoin: lihat `CONCEPT.md` dan `docs/DEPLOY.md`.
+
 # Rencana Betta Arena on-chain (Robinhood Chain)
 
 Keputusan (20 Okt 2026): jalur B, **hybrid** di **Robinhood Chain** (Arbitrum Orbit, gas ETH, chain ID 4663; testnet 46630).

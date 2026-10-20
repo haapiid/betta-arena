@@ -13,20 +13,5 @@ export default defineConfig({
   },
   networks: {
     localhost: { type: 'http', chainType: 'l1', url: 'http://127.0.0.1:8545' },
-    // Robinhood Chain (Arbitrum Orbit, gas paid in ETH)
-    robinhoodTestnet: {
-      type: 'http',
-      chainType: 'generic',
-      chainId: 46630,
-      url: configVariable('RH_TESTNET_RPC'),
-      accounts: [configVariable('DEPLOYER_KEY')],
-    },
-    robinhood: {
-      type: 'http',
-      chainType: 'generic',
-      chainId: 4663,
-      url: configVariable('RH_MAINNET_RPC'),
-      accounts: [configVariable('DEPLOYER_KEY')],
-    },
   },
 })

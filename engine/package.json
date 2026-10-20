@@ -1,0 +1,19 @@
+{
+  "name": "betta-arena-engine",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "test": "tsx --test src/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "tsx": "4.23.15",
+    "viem": "2.57.7"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.1",
+    "typescript": "5.9.3"
+  }
+}

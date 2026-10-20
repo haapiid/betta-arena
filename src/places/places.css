@@ -1,0 +1,359 @@
+/*
+  A night at the betta fights, top to bottom: ringside → the stall's rule board → the keepers' shelf →
+  the bell (fee tank and buyback tickets) → the deep → your jar → closing time.
+  Every place has its own ground; betta red is the one loud colour everywhere, gold is the belt.
+*/
+
+:root {
+  --red: #ff4150;
+  --belt: #f2c14e;
+  --night: #040b11;
+  --stall: #2a1c12;
+  --stall-ink: #f3e7cf;
+  --shelf: #0a2530;
+  --wood: #5a3e2a;
+  --brass: #17120a;
+  --deep: #020d13;
+  --paper: #efe6d2;
+  --paper-ink: #1d1712;
+}
+
+.place {
+  position: relative;
+  isolation: isolate;
+  /* clip sideways only: each place's edge is drawn above it, over the place before */
+  overflow-x: clip;
+}
+.place-in {
+  position: relative;
+  z-index: 2;
+  margin: 0 auto;
+  max-width: 80rem;
+  padding: 6rem 1rem;
+}
+@media (min-width: 640px) {
+  .place-in { padding: 7rem 2.5rem; }
+}
+@media (min-width: 1024px) {
+  .place-in { padding: 7.5rem 4rem; }
+}
+/* the decorative scene sits behind a place's content */
+.place .scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 1;
+}
+.headline {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 0.98;
+  font-size: clamp(2.2rem, 5.2vw, 4.4rem);
+}
+.headline em {
+  font-style: italic;
+  color: var(--red);
+}
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: color-mix(in srgb, currentColor 70%, transparent);
+}
+
+/* ---------- frame: bar, progress, journey rail ---------- */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 50;
+  background: color-mix(in srgb, var(--night) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #12303b;
+}
+.progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  z-index: 60;
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  background: linear-gradient(90deg, var(--belt), var(--red));
+}
+.journey {
+  position: fixed;
+  left: 1.1rem;
+  top: 50%;
+  z-index: 40;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+@media (min-width: 1440px) {
+  .journey { display: flex; }
+}
+.journey a {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: #5d7d89;
+}
+.journey a i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  transition: background 0.3s, transform 0.3s;
+}
+.journey a span {
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.3s, transform 0.3s;
+}
+.journey a:hover span,
+.journey a.here span {
+  opacity: 1;
+  transform: none;
+}
+.journey a.here {
+  color: var(--red);
+}
+.journey a.here i {
+  background: var(--red);
+  transform: scale(1.3);
+}
+
+/* ---------- 1 · ringside ---------- */
+.ringside {
+  background: radial-gradient(70% 60% at 50% 30%, #0b2230 0%, var(--night) 70%);
+  min-height: 100svh;
+}
+.ring-stage {
+  position: relative;
+  border-radius: 28px;
+  overflow: hidden;
+  background: #071820;
+  box-shadow: 0 0 0 1px rgba(200, 240, 250, 0.16), 0 40px 90px -30px rgba(0, 0, 0, 0.9), 0 0 120px -40px rgba(255, 65, 80, 0.35);
+}
+.ring-stage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.hp {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.hp i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.35s var(--ease-out-expo);
+}
+.belt {
+  background: linear-gradient(135deg, #f7d77c, #c8932a 60%, #f2c14e);
+  color: #241707;
+}
+
+/* ticker band of fights */
+.ticker {
+  position: relative;
+  z-index: 3;
+  overflow: hidden;
+  border-block: 1px solid #3a1418;
+  background: var(--red);
+  color: #170405;
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 2.5rem;
+  padding: 0.6rem 0;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: ticker 60s linear infinite;
+}
+@keyframes ticker {
+  to { transform: translateX(-50%); }
+}
+
+/* ---------- 2 · the stall ---------- */
+.stall {
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 2px, transparent 2px 140px),
+    linear-gradient(180deg, #34231a, var(--stall) 40%);
+  color: var(--stall-ink);
+}
+.sign {
+  position: relative;
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-radius: 6px;
+  padding: 1.4rem 1.4rem 1.6rem;
+  box-shadow: 0 18px 30px -16px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+.sign::before,
+.sign::after {
+  content: '';
+  position: absolute;
+  top: 10px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #d9d2c3, #6b6355);
+}
+.sign::before { left: 10px; }
+.sign::after { right: 10px; }
+.sign .no {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--red);
+}
+
+/* ---------- 3 · the shelf ---------- */
+.shelf-place {
+  background: radial-gradient(60% 50% at 12% 10%, rgba(255, 190, 110, 0.13), transparent 70%), var(--shelf);
+}
+.plank {
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #7a5638, var(--wood) 40%, #2b1d12);
+  box-shadow: 0 14px 24px -10px rgba(0, 0, 0, 0.8);
+}
+.mini-jar {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  border-radius: 18px 18px 26px 26px;
+  background: linear-gradient(180deg, rgba(124, 198, 207, 0.25), rgba(20, 85, 102, 0.55));
+  box-shadow: inset 0 0 0 1.5px rgba(220, 248, 255, 0.4), inset 8px 0 14px -10px rgba(255, 255, 255, 0.5);
+}
+.mini-jar::before {
+  content: '';
+  position: absolute;
+  inset: -6px 14% auto;
+  height: 10px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(225, 250, 255, 0.55);
+}
+
+/* ---------- 4 · the bell ---------- */
+.bell-place {
+  background:
+    radial-gradient(50% 45% at 80% 20%, rgba(242, 193, 78, 0.1), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.02) 0 1px, transparent 1px 34px),
+    var(--brass);
+}
+.tank {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-width: 300px;
+  border-radius: 26px 26px 34px 34px;
+  overflow: hidden;
+  background: rgba(10, 30, 36, 0.6);
+  box-shadow: inset 0 0 0 2px rgba(220, 248, 255, 0.35), 0 30px 60px -30px rgba(0, 0, 0, 0.9);
+}
+.tank-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: linear-gradient(180deg, #7ce8dc, #1f8d86 60%, #0d4a4c);
+  transition: height 1.2s var(--ease-out-expo);
+}
+.tank-fill::before {
+  content: '';
+  position: absolute;
+  inset: -6px 0 auto 0;
+  height: 12px;
+  background: radial-gradient(60% 100% at 50% 100%, rgba(220, 255, 250, 0.65), transparent 70%);
+}
+.ticket {
+  background: #fbf6ea;
+  color: #1c1610;
+  font-family: var(--font-mono);
+  border-radius: 4px;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.8);
+  -webkit-mask: radial-gradient(circle 6px at 6px 50%, transparent 98%, #000) -6px 0 / 100% 22px repeat-y;
+  mask: radial-gradient(circle 6px at 6px 50%, transparent 98%, #000) -6px 0 / 100% 22px repeat-y;
+}
+.stamp {
+  display: inline-block;
+  border: 2px solid var(--red);
+  color: var(--red);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-weight: 700;
+  transform: rotate(-8deg);
+}
+
+/* ---------- 5 · the deep ---------- */
+.deep-place {
+  background: linear-gradient(180deg, #03141c 0%, var(--deep) 55%, #010507 100%);
+}
+.coin {
+  position: absolute;
+  top: -20px;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 30%, #fff3c4, #e2a93a 55%, #8a5b12);
+  box-shadow: 0 0 12px rgba(242, 193, 78, 0.5);
+  animation: sink linear infinite;
+}
+@keyframes sink {
+  0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  100% { transform: translate3d(30px, 105vh, 0) rotate(540deg); opacity: 0.2; }
+}
+
+/* ---------- 6 · your jar (the one light place) ---------- */
+.paper-place {
+  background:
+    radial-gradient(70% 60% at 50% 0%, #fffaf0, transparent 70%),
+    var(--paper);
+  color: var(--paper-ink);
+}
+.paper-place .kicker { color: #6d5f4e; }
+.field {
+  background: #fffdf6;
+  border: 1.5px solid #c9bba1;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--paper-ink);
+  width: 100%;
+}
+.field:focus {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
+/* ---------- closing ---------- */
+.closing {
+  background: radial-gradient(40% 40% at 50% 70%, rgba(255, 190, 110, 0.1), transparent 70%), var(--night);
+}
+
+/* edges between places: each one is drawn in the colour of the place below and rises into the one above */
+.edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  width: 100%;
+  height: clamp(40px, 7vw, 110px);
+  display: block;
+  pointer-events: none;
+  z-index: 3;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track,
+  .coin { animation: none; }
+  .tank-fill { transition: none; }
+}

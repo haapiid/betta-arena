@@ -69,7 +69,7 @@ export function Backdrop({ story }: { story: [string, Scene][] }) {
 }
 
 // ---------- 1. the surface: sunlight through moving water, bubbles rising ----------
-function Surface({ cls }: { cls: string }) {
+export function Surface({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="surface-caustics" />
@@ -86,7 +86,7 @@ function Surface({ cls }: { cls: string }) {
 }
 
 // ---------- 2. the keeper's room at night: a desk lamp, a window, dust in the light ----------
-function Room({ cls }: { cls: string }) {
+export function Room({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="room-lamp" />
@@ -117,7 +117,7 @@ function Room({ cls }: { cls: string }) {
 
 // ---------- 3. the betta market: string lights over rows of fish in plastic bags ----------
 const FISH = ['#c0162a', '#2a46c4', '#7d2bb8', '#f07a22', '#e6ecf3', '#1f3ab8', '#d4232a', '#5fe0d0']
-function Market({ cls }: { cls: string }) {
+export function Market({ cls }: { cls: string }) {
   const bulbs = 15
   return (
     <div className={cls}>
@@ -152,7 +152,7 @@ function Market({ cls }: { cls: string }) {
 }
 
 // ---------- 4. fight night: two spotlights, the crowd, a gold glow on the ring ----------
-function FightNight({ cls }: { cls: string }) {
+export function FightNight({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="spot spot-l" />
@@ -183,7 +183,7 @@ function FightNight({ cls }: { cls: string }) {
 }
 
 // ---------- 5. the hall of fame: gold light and slow glints ----------
-function Hall({ cls }: { cls: string }) {
+export function Hall({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="hall-beams" />
@@ -199,7 +199,7 @@ function Hall({ cls }: { cls: string }) {
 }
 
 // ---------- 6. the sea floor: sand, swaying plants, marine snow ----------
-function SeaFloor({ cls }: { cls: string }) {
+export function SeaFloor({ cls }: { cls: string }) {
   return (
     <div className={cls}>
       <div className="floor-light" />

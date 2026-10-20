@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true
+  },
+  "include": ["src", "../src/game/ring.ts", "../src/game/battle.ts", "../src/game/species.ts", "../src/game/traits.ts", "../src/render/color.ts", "../src/config.ts"]
+}

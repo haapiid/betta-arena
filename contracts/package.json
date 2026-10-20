@@ -1,10 +1,11 @@
 {
-  "name": "betta-arena-contracts",
+  "name": "betta-arena-pons-mock",
   "private": true,
   "type": "module",
+  "description": "Local testing only: a Pons stand-in (token, curve, fee escrow) for running the engine on a Hardhat node.",
   "scripts": {
-    "build": "hardhat build",
-    "test": "hardhat test"
+    "node": "hardhat node",
+    "local": "hardhat run scripts/local.ts --network localhost"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox-viem": "5.0.7",
