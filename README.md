@@ -22,7 +22,8 @@ with them, so a replay always matches what the engine recorded.
 
 ```bash
 npm install && (cd engine && npm install)
-npm run dev                       # site on http://localhost:3110 (demo fights; /api proxies to 127.0.0.1:5050)
+npm run dev                       # site on http://localhost:3110 with demo fights
+                                  # (set ENGINE_URL=http://127.0.0.1:5050 in .env to use a local engine instead)
 ```
 
 With the engine on a local chain:
