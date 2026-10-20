@@ -98,10 +98,10 @@ export function Hero({ p, now, round, pot }: { p: Player; now: number; round: nu
   const sp = SPECIES.find((s) => s.id === SHOWCASE[i])!
   const living = p.tanks.filter((t) => t?.alive).length
   return (
-    <section id="top" className="relative overflow-hidden">
+    <section id="top" data-dive="hero" className="relative z-0">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_60%_at_70%_40%,rgba(95,224,208,0.12),transparent_70%)]" />
       <div className="relative mx-auto grid max-w-7xl items-center gap-6 px-4 pb-8 pt-6 sm:px-10 md:grid-cols-[1.4fr_1fr] md:pb-10 md:pt-8 lg:px-16">
-        <div>
+        <div data-dive="copy">
           <div className="eyebrow mb-3">Betta keeping · betta fighting · ${SYMBOL}</div>
           <h1 className="display text-[clamp(2.1rem,4.6vw,3.6rem)] font-semibold leading-[1]">
             Raise it. Groom it.
@@ -137,7 +137,7 @@ export function Hero({ p, now, round, pot }: { p: Player; now: number; round: nu
           </dl>
         </div>
         <div className="relative hidden sm:block">
-          <div className="jar-glass mx-auto aspect-square w-full max-w-[360px]">
+          <div data-dive="jar" className="jar-glass mx-auto aspect-square w-full max-w-[360px] will-change-transform">
             <TankView glass sizeRatio={0.62} key={sp.id} fish={{ genome: { ...sp.genome, seed: 777 + i }, image: sp.image, health: 100, hunger: 20, water: 100, sick: false, alive: true }} seed={3} />
             <div className="absolute bottom-0 left-1/2 z-[3] -translate-x-1/2 whitespace-nowrap rounded-full bg-black/45 px-3 py-1 text-xs text-white/85 backdrop-blur">
               {sp.name} · <span className="italic">{sp.rarity}</span>
@@ -161,15 +161,21 @@ export function HowItWorks() {
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
         <div className="eyebrow mb-2">How it works</div>
         <h2 className="display mb-12 max-w-2xl text-[clamp(2rem,4.2vw,3.2rem)] font-semibold leading-[1.02]">A betta keeper's life, compressed.</h2>
+        <div data-steps className="relative">
+        {/* the sequence fills as you read down the page */}
+        <div aria-hidden="true" className="absolute inset-x-0 -top-6 hidden h-[2px] rounded-full bg-line-soft lg:block">
+          <div data-steps-line className="h-full origin-left bg-gradient-to-r from-gold to-teal" />
+        </div>
         <ol className="grid gap-x-10 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
           {steps.map(([n, t, d]) => (
-            <li key={n}>
+            <li key={n} data-step>
               <div className="num mb-3 text-sm text-gold">{n}</div>
               <h3 className="display mb-2 text-xl font-semibold">{t}</h3>
               <p className="text-sm leading-relaxed text-dim">{d}</p>
             </li>
           ))}
         </ol>
+        </div>
 
         <div className="mt-16 grid gap-6 lg:grid-cols-3">
           <div className="card p-6">

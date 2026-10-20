@@ -79,7 +79,7 @@ export function Modal({ open, onClose, title, children, wide }: { open: boolean;
   }, [open, onClose])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose} role="dialog" aria-modal="true">
+    <div data-lenis-prevent className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-6" onClick={onClose} role="dialog" aria-modal="true">
       <div
         className={`rise card max-h-[92svh] w-full overflow-y-auto rounded-b-none p-5 sm:rounded-2xl sm:p-6 ${wide ? 'sm:max-w-4xl' : 'sm:max-w-xl'}`}
         onClick={(e) => e.stopPropagation()}
@@ -125,7 +125,7 @@ export function Confirm({
   }, [open, onCancel])
   if (!open) return null
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onCancel} role="alertdialog" aria-modal="true">
+    <div data-lenis-prevent className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onCancel} role="alertdialog" aria-modal="true">
       <div className="rise card w-full max-w-sm p-6 ring-1 ring-gold/40" onClick={(e) => e.stopPropagation()}>
         <div className="display mb-2 text-xl font-semibold">{title}</div>
         <div className="mb-5 text-sm leading-relaxed text-dim">{children}</div>

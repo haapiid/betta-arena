@@ -56,7 +56,7 @@ export function Jars({ p, actions, now, connected }: { p: Player; actions: Actio
   const traitFish = traitSlot !== null ? p.tanks[traitSlot] : null
 
   return (
-    <section id="jars" className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
+    <section id="jars" className="relative z-[1] mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
       <SectionHead eyebrow="Your shelf · 3 jars max" title={<>Keep them fed. Train them. Breed them.</>}>
         Hunger and dirty water build up in real time, even while you are away. A healthy fish earns XP on its own every hour, and more from training and fights. Every level grows its stats the way its breed grows.
       </SectionHead>

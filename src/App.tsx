@@ -10,6 +10,7 @@ import { Busy, Toasts, useNow, type Toast } from './components/ui'
 import { useGame, type Result } from './game/store'
 import { roundAt } from './game/tournament'
 import { useRoundPot } from './lib/hooks'
+import { useScrollMotion } from './lib/motion'
 import { connect, disconnect, onAccountsChanged, readable, short } from './lib/wallet'
 import { clearSession, hasSession } from './lib/api'
 
@@ -36,6 +37,7 @@ export default function App() {
   }, [])
 
   const { p, actions, busy, signedIn } = useGame(addr, notify)
+  useScrollMotion(PAGE === 'home')
   const now = useNow(1000)
   const round = roundAt(now)
   const pot = useRoundPot(round)
@@ -78,6 +80,9 @@ export default function App() {
 
   return (
     <>
+      {/* light from the surface, and the water the dive passes through */}
+      <div aria-hidden="true" className="sea-light" />
+      <div aria-hidden="true" data-dive="wash" className="dive-wash" />
       <Header p={p} addr={addr} signedIn={signedIn} onConnect={onConnect} onSignIn={actions.signIn} onDisconnect={onDisconnect} page={PAGE} />
       {PAGE === 'community' ? (
         <Community me={addr} />
