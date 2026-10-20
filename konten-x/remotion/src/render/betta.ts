@@ -1,5 +1,5 @@
-// Snapshot copied from ../../../src/render (Betta Arena game) so the launch video renders the real fish.
-// Only change vs. the game: tank.ts reads globalThis.__BETTA_DPR so the gravel stays crisp when scaled.
+// Snapshot copied from ../../../src/render (the Betta Arena site) so the launch content renders the real fish.
+// Only change vs. the site: tank.ts reads globalThis.__BETTA_DPR so the gravel stays crisp when scaled.
 // A betta drawn procedurally on a 2D canvas, as close to a real fish as we can get:
 // translucent fins with branching fin rays, scales, iridescent sheen, rippling fin edges,
 // gill covers that open when flaring, and fins that clamp when the fish is sick.

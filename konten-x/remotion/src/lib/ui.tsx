@@ -1,9 +1,7 @@
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import { C, F } from './brand'
 
-export const ink = (style?: React.CSSProperties): React.CSSProperties => ({ background: C.ink, ...style })
-
-// fade a whole scene in and out (scenes dip through the ink background)
+// fade a whole scene in and out (scenes dip through the night)
 export function SceneFade({ children, dur, fadeIn = 10, fadeOut = 10 }: { children: React.ReactNode; dur: number; fadeIn?: number; fadeOut?: number }) {
   const f = useCurrentFrame()
   const o = Math.min(
@@ -25,67 +23,81 @@ export function Rise({ at = 0, children, dy = 26, style }: { at?: number; childr
   return <div style={{ opacity: Math.min(1, k * 1.3), transform: `translateY(${(1 - k) * dy}px)`, ...style }}>{children}</div>
 }
 
-export function Eyebrow({ children, color = C.teal, size = 22 }: { children: React.ReactNode; color?: string; size?: number }) {
-  return <div style={{ fontFamily: F.mono, fontSize: size, letterSpacing: '0.22em', color, fontWeight: 600, textTransform: 'uppercase' }}>{children}</div>
+/** The site's mono kicker above every headline. */
+export function Kicker({ children, color = C.dim, size = 22 }: { children: React.ReactNode; color?: string; size?: number }) {
+  return <div style={{ fontFamily: F.mono, fontSize: size, letterSpacing: '0.04em', color, fontWeight: 500 }}>{children}</div>
 }
 
-export function Title({ children, size = 92, style }: { children: React.ReactNode; size?: number; style?: React.CSSProperties }) {
+/** Fraunces headline; wrap the turn of the line in <Turn> for the italic betta red. */
+export function Title({ children, size = 92, color = C.cream, style }: { children: React.ReactNode; size?: number; color?: string; style?: React.CSSProperties }) {
   return (
-    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 700, letterSpacing: '-0.025em', lineHeight: 1.02, color: '#f6ecd6', fontVariationSettings: "'opsz' 144, 'SOFT' 30", ...style }}>
+    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 0.98, color, fontVariationSettings: "'opsz' 144, 'SOFT' 30", ...style }}>
       {children}
     </div>
   )
 }
 
-export function Body({ children, size = 34, style }: { children: React.ReactNode; size?: number; style?: React.CSSProperties }) {
-  return <div style={{ fontFamily: F.body, fontSize: size, lineHeight: 1.35, color: C.dim, fontWeight: 450, ...style }}>{children}</div>
+export function Turn({ children, color = C.red }: { children: React.ReactNode; color?: string }) {
+  return <span style={{ fontStyle: 'italic', color, fontWeight: 600 }}>{children}</span>
 }
 
-export function Chip({ children, color = C.teal, style }: { children: React.ReactNode; color?: string; style?: React.CSSProperties }) {
+export function Body({ children, size = 34, color = C.dim, style }: { children: React.ReactNode; size?: number; color?: string; style?: React.CSSProperties }) {
+  return <div style={{ fontFamily: F.body, fontSize: size, lineHeight: 1.35, color, fontWeight: 450, ...style }}>{children}</div>
+}
+
+export function Brandmark({ size = 26, color = C.cream }: { size?: number; color?: string }) {
+  return (
+    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 650, color, letterSpacing: '-0.01em' }}>
+      Betta <span style={{ color: C.gold }}>Arena</span>
+    </div>
+  )
+}
+
+/** "$BETTA · Coming soon on Pons · Robinhood Chain" */
+export function LaunchPill({ size = 30, glow = 0 }: { size?: number; glow?: number }) {
   return (
     <div
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 10,
-        padding: '10px 20px',
+        gap: size * 0.45,
+        padding: `${size * 0.42}px ${size * 0.95}px`,
         borderRadius: 999,
-        border: `1.5px solid ${color}66`,
-        background: `${color}14`,
-        color,
-        fontFamily: F.body,
-        fontWeight: 650,
-        fontSize: 26,
-        ...style,
+        border: `2px solid rgba(242,193,78,0.6)`,
+        background: 'rgba(4,11,17,0.82)',
+        fontFamily: F.mono,
+        fontSize: size,
+        color: C.text,
+        whiteSpace: 'nowrap',
+        boxShadow: glow ? `0 0 ${glow}px rgba(242,193,78,0.22)` : undefined,
       }}
     >
-      {children}
+      <span style={{ color: C.gold, fontWeight: 700 }}>$BETTA</span>
+      <span style={{ color: C.faint }}>·</span>
+      <span>Coming soon on Pons</span>
+      <span style={{ color: C.faint }}>·</span>
+      <span>Robinhood Chain</span>
     </div>
   )
 }
 
-export function Meter({ label, value, color, width = 560, right }: { label: string; value: number; color: string; width?: number; right?: string }) {
-  return (
-    <div style={{ width }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: F.mono, fontSize: 20, color: C.dim, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 10 }}>
-        <span>{label}</span>
-        <span style={{ color: C.text, letterSpacing: 0 }}>{right ?? `${Math.round(value)}%`}</span>
-      </div>
-      <div style={{ height: 14, borderRadius: 99, background: 'rgba(255,255,255,0.07)', border: `1px solid ${C.lineSoft}`, overflow: 'hidden' }}>
-        <div style={{ width: `${Math.max(0, Math.min(100, value))}%`, height: '100%', borderRadius: 99, background: `linear-gradient(90deg, ${color}aa, ${color})`, boxShadow: `0 0 18px ${color}66` }} />
-      </div>
-    </div>
-  )
-}
-
-export function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+/** The gold belt badge from the site (.belt) */
+export function BeltBadge({ children, size = 26, style }: { children: React.ReactNode; size?: number; style?: React.CSSProperties }) {
   return (
     <div
       style={{
-        background: `linear-gradient(180deg, ${C.panel}, ${C.deep})`,
-        border: `1.5px solid ${C.lineSoft}`,
-        borderRadius: 24,
-        boxShadow: '0 30px 60px -30px rgba(0,0,0,0.8)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: size * 0.4,
+        padding: `${size * 0.32}px ${size * 0.8}px`,
+        borderRadius: 999,
+        background: 'linear-gradient(135deg, #f7d77c, #c8932a 58%, #f2c14e)',
+        color: '#241707',
+        fontFamily: F.body,
+        fontWeight: 800,
+        fontSize: size,
+        whiteSpace: 'nowrap',
+        boxShadow: '0 14px 40px -10px rgba(0,0,0,0.8), 0 0 40px rgba(242,193,78,0.25)',
         ...style,
       }}
     >
@@ -94,21 +106,47 @@ export function Card({ children, style }: { children: React.ReactNode; style?: R
   )
 }
 
-// soft ink backdrop with teal + gold glows, shared by most scenes
-export function Backdrop({ tealX = '30%', goldX = '80%' }: { tealX?: string; goldX?: string }) {
+/** A printed ticket with punched edges (the bell's buyback tickets, the buy slip). */
+export function Ticket({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  const mask = 'radial-gradient(circle 9px at 9px 50%, transparent 98%, #000) -9px 0 / 100% 30px repeat-y'
   return (
-    <AbsoluteFill
+    <div
       style={{
-        background: `radial-gradient(900px 700px at ${tealX} 50%, rgba(95,224,208,0.13), transparent 70%), radial-gradient(800px 600px at ${goldX} 20%, rgba(242,193,78,0.08), transparent 70%), linear-gradient(180deg, ${C.deep}, ${C.ink})`,
+        background: C.ticket,
+        color: C.paperInk,
+        fontFamily: F.mono,
+        borderRadius: 6,
+        WebkitMask: mask,
+        mask,
+        ...style,
       }}
-    />
+    >
+      {children}
+    </div>
   )
 }
 
-export function Brandmark({ size = 26 }: { size?: number }) {
+export function Stamp({ children, k = 1, size = 40, style }: { children: React.ReactNode; k?: number; size?: number; style?: React.CSSProperties }) {
+  // slams in: big and faint → its size, tilted
+  const s = 1 + (1 - k) * 1.6
   return (
-    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 700, color: '#f6ecd6', letterSpacing: '-0.01em' }}>
-      Betta <span style={{ color: C.gold }}>Arena</span>
+    <div
+      style={{
+        display: 'inline-block',
+        border: `${Math.max(3, size * 0.09)}px solid ${C.red}`,
+        color: C.red,
+        borderRadius: size * 0.18,
+        padding: `${size * 0.08}px ${size * 0.32}px`,
+        fontFamily: F.mono,
+        fontWeight: 800,
+        fontSize: size,
+        letterSpacing: '0.06em',
+        transform: `rotate(-8deg) scale(${s})`,
+        opacity: Math.min(1, k * 1.6),
+        ...style,
+      }}
+    >
+      {children}
     </div>
   )
 }

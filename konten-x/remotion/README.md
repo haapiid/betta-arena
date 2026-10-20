@@ -1,12 +1,15 @@
 # Betta Arena: launch content (Remotion)
 
-This project renders every X (Twitter) asset in `konten-x/`. The fish, jar, food, pitcher, mirror and
-tank are drawn by the game's own canvas renderers. `src/render/*.ts` is a snapshot of `../../src/render`,
-so this project builds even while the game source changes. The only change from the game is that
-`tank.ts` reads `globalThis.__BETTA_DPR`, which keeps the gravel sharp when scaled up.
+This project renders every X (Twitter) asset in `konten-x/` for the $BETTA memecoin launch on Pons
+(Robinhood Chain). The look follows the site's "night at the betta fights" (`src/places/*`): ringside,
+the bell, the deep, the keepers' shelf. The fish and tanks are drawn by the site's own canvas renderers:
+`src/render/*.ts` is a snapshot of `../../src/render` (trimmed to what is used), so this project builds
+even while the site source changes. The only change from the site is that `tank.ts` reads
+`globalThis.__BETTA_DPR`, which keeps the gravel sharp when scaled up.
 
 - Remotion `4.0.530` (pinned exactly), React 19.2.0
-- Fonts: Fraunces (variable, from `@fontsource-variable/fraunces`), Hanken Grotesk and JetBrains Mono (from `public/fonts` of the game)
+- Fonts in `public/fonts`: Fraunces (roman + italic, variable), Hanken Grotesk, JetBrains Mono
+- All fights, holders and numbers in the content are demo data: there is no contract address yet.
 
 ## Setup
 
@@ -38,12 +41,18 @@ Preview and edit interactively with `npx remotion studio`.
 
 | Path | What |
 | --- | --- |
-| `src/Root.tsx` | Compositions: `Logo`, `Banner`, `DemoVideo` (1920x1080, 30 fps, 1344 frames = 44.8 s), `DemoSquare` (1080x1080), `PostGif` (1200x675, 6 s loop) |
+| `src/Root.tsx` | Compositions: `Logo`, `Banner`, `DemoVideo` (1920x1080, 30 fps, 1329 frames = 44.3 s), `DemoSquare` (1080x1080), `PostGif` (1200x675, 6 s loop) |
 | `src/Demo.tsx` | Scene order and durations of the demo video |
-| `src/scenes/*` | Title, Shop (buy a betta), Jar (feed, water change + ketapang, Mirror Flaring), Level (stats + traits), Arena (bout), Bracket (16-fish bracket) + Prize split, End card |
-| `src/lib/jarScene.ts` | Stateless version of the game's `TankView`, so any frame can be rendered in any order |
-| `src/lib/jarTimeline.ts` | The single continuous jar shot as a pure function of time |
-| `src/PostGif.tsx` | Seamless 6 s loop: the motion periods divide 6 s exactly, and the first 0.8 s cross-fades from one loop later |
+| `src/scenes/TitleEnd.tsx` | "Every buy is a fight." title, and the "The deep keeps everything." end card |
+| `src/scenes/Ringside.tsx` | A buy lands (tx hash → breed, name; buy size → level), and the belt + streak with the fight ticker |
+| `src/scenes/Arena.tsx` | The challenger drops into the ring and fights the champion (HP bars, strikes) |
+| `src/scenes/Bell.tsx` | Creator fees fill the fee tank, the bell rings, the buyback ticket gets stamped SUNK |
+| `src/scenes/Deep.tsx` | Coins sink to the deep, the burn counter rolls up |
+| `src/scenes/Shelf.tsx` | Ten jars for the ten biggest holders who never sold; one sells and its fish jumps the jar |
+| `src/lib/ring.ts` | The bout as a pure function of time (drop-in, strikes, loser sinks); logic and animation time are separate so the GIF loops |
+| `src/lib/night.tsx` | Ringside backdrop (spotlights, crowd, flashes), the framed ring and the fighters' plates |
+| `src/lib/cast.ts` | The demo fish, the demo buy and the two scripted bouts |
+| `src/PostGif.tsx` | Seamless 6 s loop: a buy drops a betta in, the champion keeps the belt, the ring resets |
 | `src/stills.tsx` | Profile picture and header |
 
 The ffmpeg build bundled with Remotion is at `node_modules/@remotion/compositor-win32-x64-msvc/ffmpeg.exe`.

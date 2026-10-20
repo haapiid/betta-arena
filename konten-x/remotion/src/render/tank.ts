@@ -1,5 +1,5 @@
-// Snapshot copied from ../../../src/render (Betta Arena game) so the launch video renders the real fish.
-// Only change vs. the game: tank.ts reads globalThis.__BETTA_DPR so the gravel stays crisp when scaled.
+// Snapshot copied from ../../../src/render (the Betta Arena site) so the launch content renders the real fish.
+// Only change vs. the site: tank.ts reads globalThis.__BETTA_DPR so the gravel stays crisp when scaled.
 // Inside the jar: water lit from above, gravel, plants, a ketapang leaf, rising bubbles,
 // a bubble nest when the fish is healthy, and murky water when it is not changed.
 
