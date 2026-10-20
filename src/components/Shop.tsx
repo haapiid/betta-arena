@@ -25,7 +25,7 @@ export function Shop({
   const can = (price: number) => LIVE && (!connected || p.balance >= price)
 
   return (
-    <section id="shop" className="border-y border-line-soft bg-deep/60">
+    <section id="shop" className="border-y border-line-soft bg-deep/25">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
         <SectionHead eyebrow="The fish shop" title="Pick a betta. Stock the cabinet.">
           Paid in $BETTA from your wallet; each fish is an NFT you own. Every fish arrives as a level-1 juvenile. Males (♂) fight and breed; females (♀) cost less, carry short fins, and only breed. Stats roll ±6 around its breed, and each breed grows differently per level: a Plakat gets meaner, a Halfmoon gets prettier.

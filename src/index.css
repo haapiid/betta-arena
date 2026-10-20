@@ -259,3 +259,260 @@ body {
   position: relative;
   z-index: 1;
 }
+
+/* ---------- the story behind the page (src/components/Backdrop.tsx) ---------- */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.scene {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease-out-expo);
+}
+.scene.on {
+  opacity: 1;
+}
+/* only the scene on screen moves */
+.scene:not(.on) *,
+.scene:not(.on)::before,
+.scene:not(.on)::after {
+  animation-play-state: paused !important;
+}
+
+/* 1 · surface */
+.surface-caustics {
+  position: absolute;
+  inset: -10% -10% auto -10%;
+  height: 60%;
+  background:
+    radial-gradient(40% 30% at 30% 0%, rgba(150, 230, 240, 0.18), transparent 70%),
+    radial-gradient(35% 28% at 75% 5%, rgba(150, 230, 240, 0.14), transparent 70%);
+  animation: caustics 14s ease-in-out infinite alternate;
+}
+.surface-rays {
+  position: absolute;
+  inset: 0 0 30% 0;
+  background: repeating-linear-gradient(100deg, rgba(200, 250, 255, 0.045) 0 3px, transparent 3px 110px);
+  mask-image: linear-gradient(180deg, #000 0%, transparent 100%);
+  animation: rays 18s linear infinite;
+}
+.bubble {
+  position: absolute;
+  bottom: -20px;
+  border-radius: 999px;
+  border: 1px solid rgba(220, 250, 255, 0.35);
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35), transparent 60%);
+  animation: rise linear infinite;
+}
+@keyframes caustics {
+  to { transform: translate3d(4%, 2%, 0) scale(1.08); }
+}
+@keyframes rays {
+  to { background-position: 220px 0; }
+}
+@keyframes rise {
+  0% { transform: translate3d(0, 0, 0); opacity: 0; }
+  10% { opacity: 1; }
+  50% { transform: translate3d(12px, -55vh, 0); }
+  100% { transform: translate3d(-6px, -110vh, 0); opacity: 0; }
+}
+
+/* 2 · the keeper's room */
+.room-lamp {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(45% 55% at 8% 18%, rgba(255, 190, 110, 0.24), transparent 70%),
+    radial-gradient(20% 25% at 8% 14%, rgba(255, 214, 150, 0.18), transparent 70%);
+  animation: lamp 6s ease-in-out infinite alternate;
+}
+.room-window {
+  position: absolute;
+  right: 4%;
+  top: 12%;
+  width: clamp(110px, 13vw, 190px);
+  opacity: 0.35;
+}
+.room-shelf {
+  position: absolute;
+  inset: auto 0 18% 0;
+  height: 10px;
+  background: linear-gradient(180deg, rgba(90, 65, 48, 0.35), rgba(34, 23, 15, 0));
+}
+.mote {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(255, 220, 170, 0.7);
+  animation: drift ease-in-out infinite alternate;
+}
+@keyframes lamp {
+  to { opacity: 0.8; }
+}
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0); opacity: 0.2; }
+  50% { opacity: 0.9; }
+  100% { transform: translate3d(40px, -30px, 0); opacity: 0.2; }
+}
+
+/* 3 · the betta market */
+.market-lights {
+  position: absolute;
+  inset: 0 0 auto 0;
+  width: 100%;
+  height: 16vh;
+}
+.market-bulbs {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 16vh;
+}
+.bulb {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -2px 0 0 -4px;
+  border-radius: 999px;
+  background: #ffd98a;
+  box-shadow: 0 0 14px 4px rgba(255, 190, 90, 0.45), 0 0 40px 10px rgba(255, 170, 70, 0.14);
+  animation: twinkle 3s ease-in-out infinite;
+}
+.market-bags {
+  position: absolute;
+  top: 18vh;
+  bottom: 6vh;
+  width: clamp(70px, 9vw, 130px);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-content: space-around;
+  gap: 8px;
+  opacity: 0.55;
+}
+.market-bags.left { left: 1.5%; }
+.market-bags.right { right: 1.5%; }
+.bag {
+  width: 100%;
+  animation: sway 6s ease-in-out infinite alternate;
+  transform-origin: 50% 0;
+}
+@keyframes twinkle {
+  50% { opacity: 0.55; }
+}
+@keyframes sway {
+  from { transform: rotate(-3deg); }
+  to { transform: rotate(3deg); }
+}
+
+/* 4 · fight night */
+.spot {
+  position: absolute;
+  top: -10%;
+  width: 46vw;
+  height: 120vh;
+  background: linear-gradient(180deg, rgba(255, 236, 190, 0.13), rgba(255, 236, 190, 0) 80%);
+  clip-path: polygon(46% 0, 54% 0, 100% 100%, 0 100%);
+  filter: blur(6px);
+}
+.spot-l {
+  left: -12%;
+  transform-origin: 50% 0;
+  animation: spot-l 9s ease-in-out infinite alternate;
+}
+.spot-r {
+  right: -12%;
+  transform-origin: 50% 0;
+  animation: spot-r 11s ease-in-out infinite alternate;
+}
+.ring-glow {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 45%;
+  background: radial-gradient(45% 60% at 50% 100%, rgba(242, 193, 78, 0.14), transparent 70%);
+}
+.crowd {
+  position: absolute;
+  inset: auto 0 0 0;
+  width: 100%;
+  height: 18vh;
+}
+.flash {
+  fill: #fff;
+  opacity: 0;
+  animation: flash 7s linear infinite;
+}
+@keyframes spot-l {
+  from { transform: rotate(-24deg); }
+  to { transform: rotate(-8deg); }
+}
+@keyframes spot-r {
+  from { transform: rotate(24deg); }
+  to { transform: rotate(9deg); }
+}
+@keyframes flash {
+  0%, 96%, 100% { opacity: 0; }
+  97% { opacity: 0.9; }
+}
+
+/* 5 · hall of fame */
+.hall-beams {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(242, 193, 78, 0.10), transparent 55%) left 6% top 0 / 9% 100% no-repeat,
+    linear-gradient(180deg, rgba(242, 193, 78, 0.08), transparent 50%) right 8% top 0 / 7% 100% no-repeat,
+    radial-gradient(50% 40% at 50% 0%, rgba(242, 193, 78, 0.09), transparent 70%);
+}
+.glint {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background: radial-gradient(circle, #ffe3a1 0 1px, transparent 2px), linear-gradient(90deg, transparent 45%, rgba(255, 227, 161, 0.8) 50%, transparent 55%), linear-gradient(0deg, transparent 45%, rgba(255, 227, 161, 0.8) 50%, transparent 55%);
+  animation: glint ease-in-out infinite;
+}
+@keyframes glint {
+  0%, 100% { opacity: 0; transform: scale(0.4); }
+  50% { opacity: 0.85; transform: scale(1.2); }
+}
+
+/* 6 · the sea floor */
+.floor-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(60% 40% at 50% 0%, rgba(80, 160, 190, 0.08), transparent 70%), linear-gradient(180deg, transparent 60%, rgba(4, 20, 26, 0.6));
+}
+.floor {
+  position: absolute;
+  inset: auto 0 0 0;
+  width: 100%;
+  height: 34vh;
+}
+.blade {
+  animation: blade 6s ease-in-out infinite alternate;
+}
+.snow {
+  position: absolute;
+  top: -10px;
+  width: 2px;
+  height: 2px;
+  border-radius: 999px;
+  background: #cfe9f0;
+  animation: snow linear infinite;
+}
+@keyframes blade {
+  from { transform: skewX(-4deg); }
+  to { transform: skewX(4deg); }
+}
+@keyframes snow {
+  to { transform: translate3d(30px, 110vh, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene { transition: none; }
+  .scene * { animation: none !important; }
+}

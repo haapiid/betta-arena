@@ -157,7 +157,7 @@ export function HowItWorks() {
     ['04', 'Enter and fight', `Every ${PERIOD_DAYS} days each division runs a bracket of up to 16 fish, each paying the same entry fee. Registration closes an hour before the bell. Every bracket is drawn and fought on chain, so anyone can check it. After a ${Math.round(FEE * 100)}% burn the pot pays the top four: ${PRIZE_SPLIT[0] * 100}% to the champion, ${PRIZE_SPLIT[1] * 100}% to the runner-up, ${PRIZE_SPLIT[2] * 100}% to each losing semifinalist. Boosters (+10 for 24h) help on the day; fish come home wounded.`],
   ]
   return (
-    <section id="how" className="border-t border-line-soft bg-deep/60">
+    <section id="how" className="border-t border-line-soft bg-deep/25">
       <div className="mx-auto max-w-7xl px-4 py-20 sm:px-10 lg:px-16">
         <div className="eyebrow mb-2">How it works</div>
         <h2 className="display mb-12 max-w-2xl text-[clamp(2rem,4.2vw,3.2rem)] font-semibold leading-[1.02]">A betta keeper's life, compressed.</h2>
