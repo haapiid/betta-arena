@@ -17,8 +17,6 @@ function safeUrl(v: string | undefined) {
 
 export const LINKS = {
   x: safeUrl(env.VITE_LINK_X),
-  telegram: safeUrl(env.VITE_LINK_TELEGRAM),
-  discord: safeUrl(env.VITE_LINK_DISCORD),
   dexscreener: safeUrl(env.VITE_LINK_DEXSCREENER),
   buy: safeUrl(env.VITE_LINK_BUY),
   docs: safeUrl(env.VITE_LINK_DOCS),

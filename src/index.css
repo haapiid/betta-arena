@@ -463,10 +463,11 @@ body {
 .hall-beams {
   position: absolute;
   inset: 0;
+  /* soft pools of gold light falling from above, like a trophy cabinet */
   background:
-    linear-gradient(180deg, rgba(242, 193, 78, 0.10), transparent 55%) left 6% top 0 / 9% 100% no-repeat,
-    linear-gradient(180deg, rgba(242, 193, 78, 0.08), transparent 50%) right 8% top 0 / 7% 100% no-repeat,
-    radial-gradient(50% 40% at 50% 0%, rgba(242, 193, 78, 0.09), transparent 70%);
+    radial-gradient(16% 75% at 10% 0%, rgba(242, 193, 78, 0.12), transparent 70%),
+    radial-gradient(13% 65% at 90% 0%, rgba(242, 193, 78, 0.10), transparent 70%),
+    radial-gradient(50% 40% at 50% 0%, rgba(242, 193, 78, 0.07), transparent 70%);
 }
 .glint {
   position: absolute;

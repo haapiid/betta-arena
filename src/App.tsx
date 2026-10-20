@@ -7,7 +7,7 @@ import { Jars } from './components/Jars'
 import { Footer, Header, Hero, HowItWorks } from './components/Layout'
 import { Shop } from './components/Shop'
 import { Busy, Toasts, useNow, type Toast } from './components/ui'
-import { Backdrop } from './components/Backdrop'
+import { Backdrop, COMMUNITY_STORY, HOME_STORY } from './components/Backdrop'
 import { useGame, type Result } from './game/store'
 import { roundAt } from './game/tournament'
 import { useRoundPot } from './lib/hooks'
@@ -38,7 +38,8 @@ export default function App() {
   }, [])
 
   const { p, actions, busy, signedIn } = useGame(addr, notify)
-  useScrollMotion(PAGE === 'home')
+  // smooth scrolling on both pages; the dive and the step line only exist on the home page
+  useScrollMotion(true)
   const now = useNow(1000)
   const round = roundAt(now)
   const pot = useRoundPot(round)
@@ -82,7 +83,7 @@ export default function App() {
   return (
     <>
       {/* one scene per section of the keeper's story, and the water the dive passes through */}
-      <Backdrop fixed={PAGE === 'community' ? 'hall' : undefined} />
+      <Backdrop story={PAGE === 'community' ? COMMUNITY_STORY : HOME_STORY} />
       <div aria-hidden="true" data-dive="wash" className="dive-wash" />
       <Header p={p} addr={addr} signedIn={signedIn} onConnect={onConnect} onSignIn={actions.signIn} onDisconnect={onDisconnect} page={PAGE} />
       {PAGE === 'community' ? (

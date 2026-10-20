@@ -8,13 +8,19 @@ import { useEffect, useState } from 'react'
 export type Scene = 'surface' | 'room' | 'market' | 'arena' | 'hall' | 'seafloor'
 
 // which section tells which part of the story
-const BY_SECTION: [string, Scene][] = [
+export const HOME_STORY: [string, Scene][] = [
   ['top', 'surface'],
   ['jars', 'room'],
   ['shop', 'market'],
   ['arena', 'arena'],
   ['leaderboard', 'hall'],
   ['how', 'seafloor'],
+]
+// the community page: the keepers' room, the market square where people gather, the hall of fame
+export const COMMUNITY_STORY: [string, Scene][] = [
+  ['c-top', 'room'],
+  ['c-channels', 'market'],
+  ['c-keepers', 'hall'],
 ]
 
 // stable pseudo-random numbers, so the scenes look the same on every visit
@@ -27,28 +33,27 @@ const list = (n: number, seed: number) => {
   return Array.from({ length: n }, (_, i) => ({ i, a: r(), b: r(), c: r(), d: r() }))
 }
 
-export function Backdrop({ fixed }: { fixed?: Scene }) {
-  const [scene, setScene] = useState<Scene>(fixed ?? 'surface')
+export function Backdrop({ story }: { story: [string, Scene][] }) {
+  const [scene, setScene] = useState<Scene>(story[0][1])
 
   useEffect(() => {
-    if (fixed) return
     // the section crossing the middle of the screen sets the scene
     const io = new IntersectionObserver(
       (es) => {
         for (const e of es) {
           if (!e.isIntersecting) continue
-          const s = BY_SECTION.find(([id]) => id === e.target.id)?.[1]
+          const s = story.find(([id]) => id === e.target.id)?.[1]
           if (s) setScene(s)
         }
       },
       { rootMargin: '-48% 0px -48% 0px' },
     )
-    for (const [id] of BY_SECTION) {
+    for (const [id] of story) {
       const el = document.getElementById(id)
       if (el) io.observe(el)
     }
     return () => io.disconnect()
-  }, [fixed])
+  }, [story])
 
   const on = (s: Scene) => `scene scene-${s}${scene === s ? ' on' : ''}`
   return (

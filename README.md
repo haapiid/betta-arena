@@ -109,7 +109,7 @@ Code: `src/game/breeding.ts` (rules and genetics), `src/components/Breeding.tsx`
 ## Leaderboard & community
 
 - **Leaderboard** (`/#leaderboard`): top earners, most titles and fight wins over the last 30 rounds, across all divisions. Built by the server from settled brackets on chain.
-- **Community page** (`/community`): channel cards, contract address with copy, top keepers and upcoming events. Fill the links in `.env` (`VITE_LINK_X`, `VITE_LINK_TELEGRAM`, `VITE_LINK_DISCORD`, `VITE_LINK_DEXSCREENER`, `VITE_LINK_BUY`, `VITE_LINK_DOCS`, `VITE_TOKEN_ADDRESS`). Empty links show "Coming soon".
+- **Community page** (`/community`): channel cards, contract address with copy, top keepers and upcoming events. Fill the links in `.env` (`VITE_LINK_X`, `VITE_LINK_DEXSCREENER`, `VITE_LINK_BUY`, `VITE_LINK_DOCS`, `VITE_TOKEN_ADDRESS`). Empty links show "Coming soon".
 - When hosting, make the server send `index.html` for `/community` (SPA fallback). Vercel/Netlify: add a rewrite of `/*` to `/index.html`.
 
 ## Swapping in real fish art

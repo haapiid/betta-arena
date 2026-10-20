@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowUpRight, BookOpen, CalendarDays, Check, Copy, LineChart, MessagesSquare, Send, ShoppingCart, Sparkles, Trophy } from 'lucide-react'
+import { ArrowUpRight, BookOpen, CalendarDays, Check, Copy, LineChart, ShoppingCart, Sparkles, Trophy } from 'lucide-react'
 import { TankView } from './FishCanvas'
 import { Coin, SYMBOL } from './ui'
 import { ranked } from './Leaderboard'
@@ -17,9 +17,7 @@ function XLogo({ size = 18 }: { size?: number }) {
 }
 
 const CHANNELS = [
-  { key: 'x', name: 'X (Twitter)', icon: <XLogo />, note: 'Announcements, round results and fish of the week.' },
-  { key: 'telegram', name: 'Telegram', icon: <Send size={18} />, note: 'The main chat. Keepers trade tips, brag and complain about bad luck.' },
-  { key: 'discord', name: 'Discord', icon: <MessagesSquare size={18} />, note: 'Breeding talk, bug reports and events.' },
+  { key: 'x', name: 'X (Twitter)', icon: <XLogo />, note: 'Announcements, round results, fish of the week, and where keepers talk.' },
   { key: 'dexscreener', name: 'DexScreener', icon: <LineChart size={18} />, note: `The live ${'$'}${SYMBOL} chart.` },
   { key: 'buy', name: `Buy ${'$'}${SYMBOL}`, icon: <ShoppingCart size={18} />, note: `Get ${'$'}${SYMBOL} for fish, food and entry fees.` },
   { key: 'docs', name: 'Docs', icon: <BookOpen size={18} />, note: 'Game rules, tokenomics and roadmap.' },
@@ -28,7 +26,7 @@ const CHANNELS = [
 const EVENTS = [
   { title: 'Weekly Show Bench', note: 'A beauty-only contest judged on flare and colour. No fighting, no wounds.', icon: Sparkles },
   { title: 'Keeper of the Month', note: 'The top earner of the month gets a featured spot and a rare juvenile.', icon: Trophy },
-  { title: 'Community AMA', note: 'Regular voice chats with the team about what ships next.', icon: CalendarDays },
+  { title: 'AMA on X Spaces', note: 'Regular live talks with the team on X about what ships next.', icon: CalendarDays },
 ]
 
 export function Community({ me }: { me: string | null }) {
@@ -49,7 +47,7 @@ export function Community({ me }: { me: string | null }) {
 
   return (
     <main>
-      <section className="relative overflow-hidden border-b border-line-soft">
+      <section id="c-top" className="relative overflow-hidden border-b border-line-soft">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(55%_60%_at_75%_40%,rgba(242,193,78,0.10),transparent_70%)]" />
         <div className="relative mx-auto grid max-w-7xl items-center gap-10 px-4 py-16 sm:px-10 md:grid-cols-[1.2fr_1fr] lg:px-16">
           <div>
@@ -58,28 +56,28 @@ export function Community({ me }: { me: string | null }) {
               The keepers' <span className="italic text-gold">room.</span>
             </h1>
             <p className="mt-6 max-w-lg text-[1.05rem] leading-relaxed text-dim">
-              Where Betta Arena keepers meet: show off a prime Halfmoon, mourn a Plakat lost in the semifinal, and find out first when the next round, breed or event drops.
+              Where Betta Arena keepers meet on X: show off a prime Halfmoon, mourn a Plakat lost in the semifinal, and find out first when the next round, breed or event drops.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              {LINKS.telegram ? (
-                <a href={LINKS.telegram} target="_blank" rel="noopener noreferrer" className="btn btn-gold">
-                  <Send size={15} /> Join the Telegram
+              {LINKS.x ? (
+                <a href={LINKS.x} target="_blank" rel="noopener noreferrer" className="btn btn-gold">
+                  <XLogo size={15} /> Follow on X
                 </a>
               ) : (
-                <span className="btn btn-gold pointer-events-none opacity-60">Channels opening soon</span>
+                <span className="btn btn-gold pointer-events-none opacity-60">X account opening soon</span>
               )}
               <a href="/#leaderboard" className="btn btn-ghost">
                 See the leaderboard
               </a>
             </div>
           </div>
-          <div className="jar mx-auto aspect-[5/4] w-full max-w-[440px]">
-            <TankView fish={{ genome: { ...SPECIES[8].genome, seed: 51 }, health: 100, hunger: 10, water: 100, sick: false, alive: true }} seed={11} sizeRatio={0.55} />
+          <div className="jar-glass mx-auto aspect-square w-full max-w-[380px]">
+            <TankView glass sizeRatio={0.6} fish={{ genome: { ...SPECIES[8].genome, seed: 51 }, health: 100, hunger: 10, water: 100, sick: false, alive: true }} seed={11} />
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-10 lg:px-16">
+      <section id="c-channels" className="mx-auto max-w-7xl px-4 py-16 sm:px-10 lg:px-16">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
           <div>
             <div className="eyebrow mb-2">Channels</div>
@@ -87,7 +85,7 @@ export function Community({ me }: { me: string | null }) {
           </div>
           <span className="text-sm text-faint">{live ? `${live} of ${CHANNELS.length} live` : 'Links go live at launch'}</span>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {CHANNELS.map((c) => {
             const href = LINKS[c.key]
             const inner = (
@@ -127,7 +125,7 @@ export function Community({ me }: { me: string | null }) {
         </div>
       </section>
 
-      <section className="border-t border-line-soft bg-deep/60">
+      <section id="c-keepers" className="border-t border-line-soft bg-deep/25">
         <div className="mx-auto grid max-w-7xl gap-10 px-4 py-16 sm:px-10 lg:grid-cols-[1fr_1.1fr] lg:px-16">
           <div>
             <div className="eyebrow mb-2">Top keepers</div>
