@@ -1,5 +1,5 @@
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
-import { C, F } from './brand'
+import { C, DISPLAY, F } from './brand'
 
 // fade a whole scene in and out (scenes dip through the night)
 export function SceneFade({ children, dur, fadeIn = 10, fadeOut = 10 }: { children: React.ReactNode; dur: number; fadeIn?: number; fadeOut?: number }) {
@@ -28,26 +28,27 @@ export function Kicker({ children, color = C.dim, size = 22 }: { children: React
   return <div style={{ fontFamily: F.mono, fontSize: size, letterSpacing: '0.04em', color, fontWeight: 500 }}>{children}</div>
 }
 
-/** Fraunces headline; wrap the turn of the line in <Turn> for the italic betta red. */
+/** Anton headline, uppercase (the site's .headline); wrap the turn of the line in <Turn> for betta red. */
 export function Title({ children, size = 92, color = C.cream, style }: { children: React.ReactNode; size?: number; color?: string; style?: React.CSSProperties }) {
   return (
-    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 0.98, color, fontVariationSettings: "'opsz' 144, 'SOFT' 30", ...style }}>
+    <div style={{ ...DISPLAY, fontSize: size, color, ...style }}>
       {children}
     </div>
   )
 }
 
 export function Turn({ children, color = C.red }: { children: React.ReactNode; color?: string }) {
-  return <span style={{ fontStyle: 'italic', color, fontWeight: 600 }}>{children}</span>
+  // upright, like the site's .headline em: Anton has no italic and must not be faked
+  return <span style={{ fontStyle: 'normal', color }}>{children}</span>
 }
 
 export function Body({ children, size = 34, color = C.dim, style }: { children: React.ReactNode; size?: number; color?: string; style?: React.CSSProperties }) {
-  return <div style={{ fontFamily: F.body, fontSize: size, lineHeight: 1.35, color, fontWeight: 450, ...style }}>{children}</div>
+  return <div style={{ fontFamily: F.body, fontSize: size, lineHeight: 1.35, color, fontWeight: 400, ...style }}>{children}</div>
 }
 
 export function Brandmark({ size = 26, color = C.cream }: { size?: number; color?: string }) {
   return (
-    <div style={{ fontFamily: F.display, fontSize: size, fontWeight: 650, color, letterSpacing: '-0.01em' }}>
+    <div style={{ ...DISPLAY, fontSize: size, color, letterSpacing: '0.03em', lineHeight: 1 }}>
       Betta <span style={{ color: C.gold }}>Arena</span>
     </div>
   )
@@ -93,9 +94,10 @@ export function BeltBadge({ children, size = 26, style }: { children: React.Reac
         borderRadius: 999,
         background: 'linear-gradient(135deg, #f7d77c, #c8932a 58%, #f2c14e)',
         color: '#241707',
-        fontFamily: F.body,
-        fontWeight: 800,
-        fontSize: size,
+        ...DISPLAY,
+        letterSpacing: '0.02em',
+        lineHeight: 1.1,
+        fontSize: size * 1.12,
         whiteSpace: 'nowrap',
         boxShadow: '0 14px 40px -10px rgba(0,0,0,0.8), 0 0 40px rgba(242,193,78,0.25)',
         ...style,

@@ -8,7 +8,13 @@ even while the site source changes. The only change from the site is that `tank.
 `globalThis.__BETTA_DPR`, which keeps the gravel sharp when scaled up.
 
 - Remotion `4.0.530` (pinned exactly), React 19.2.0
-- Fonts in `public/fonts`: Fraunces (roman + italic, variable), Hanken Grotesk, JetBrains Mono
+- Fonts in `public/fonts` (the site's type system, loaded in `src/lib/brand.ts` with `@remotion/fonts`, which holds
+  each frame until the fonts are ready):
+  - **Anton** (`Anton-400.woff2`, from `@fontsource/anton`): headlines, names, the belt. One weight (400), no italic,
+    always uppercase, line-height ~0.92 (`DISPLAY` in `brand.ts`). The red turn of a headline (`<Turn>`) stays upright.
+    Never set `fontWeight`/`fontStyle` on it (`fontSynthesis: 'none'`).
+  - **Inter Tight** (`InterTight-var.woff2`, variable, from `@fontsource-variable/inter-tight`): body lines.
+  - **JetBrains Mono** (`JetBrainsMono-var.woff2`): numbers, hashes, addresses, kickers.
 - All fights, holders and numbers in the content are demo data: there is no contract address yet.
 
 ## Setup

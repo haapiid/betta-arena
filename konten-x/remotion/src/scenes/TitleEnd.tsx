@@ -104,16 +104,16 @@ export function EndScene({ dur }: { dur: number }) {
         <div style={{ transform: `scale(${0.7 + 0.3 * k})`, opacity: clamp(k * 1.4), filter: 'drop-shadow(0 20px 60px rgba(242,193,78,0.25))' }}>
           <LogoBadge size={230} />
         </div>
-        <Rise at={10} style={{ marginTop: 26 }}>
-          <Brandmark size={64} />
+        <Rise at={10} style={{ marginTop: 28 }}>
+          <Brandmark size={58} />
         </Rise>
-        <Rise at={18} style={{ marginTop: 22 }}>
+        <Rise at={18} style={{ marginTop: 30 }}>
           <Title size={128}>
             The deep <Turn>keeps everything.</Turn>
           </Title>
         </Rise>
         <Rise at={28} style={{ marginTop: 30 }}>
-          <div style={{ fontFamily: F.display, fontSize: 40, color: C.text, fontVariationSettings: "'opsz' 72" }}>Every buy is a fight.</div>
+          <div style={{ fontFamily: F.body, fontSize: 40, fontWeight: 500, color: C.text }}>Every buy is a fight.</div>
         </Rise>
         <Rise at={36} style={{ marginTop: 44 }}>
           <LaunchPill size={34} glow={30 + 20 * Math.sin(f / 8)} />

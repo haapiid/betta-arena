@@ -45,11 +45,15 @@ export function ArenaScene({ dur }: { dur: number }) {
           <Kicker size={22}>The ring</Kicker>
         </Rise>
         <Rise at={12} style={{ marginTop: 18 }}>
-          <Title size={78}>
-            It fights the champion <Turn>on the spot.</Turn>
+          <Title size={88}>
+            It fights the
+            <br />
+            champion
+            <br />
+            <Turn>on the spot.</Turn>
           </Title>
         </Rise>
-        <Rise at={20} style={{ marginTop: 30 }}>
+        <Rise at={20} style={{ marginTop: 34 }}>
           <Body size={28}>Win and it takes the belt. Lose and the champion&rsquo;s streak grows.</Body>
         </Rise>
       </div>

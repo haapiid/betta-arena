@@ -1,6 +1,6 @@
 import { AbsoluteFill, useCurrentFrame, useVideoConfig } from 'remotion'
 import { Canvas } from '../lib/Canvas'
-import { C, F } from '../lib/brand'
+import { C, DISPLAY, F } from '../lib/brand'
 import { BUY, KAISER, RONIN, short } from '../lib/cast'
 import { drawTankBack, drawTankFront, gravelTop } from '../render/tank'
 import { clamp, placeFish, prand, scaleFor, smooth } from '../lib/jarScene'
@@ -33,7 +33,7 @@ function Row({ label, value, from, at, dot }: { label: string; value: string; fr
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '130px 1fr auto', alignItems: 'baseline', gap: 18, padding: '14px 0', borderTop: `1px solid ${C.lineSoft}`, opacity: clamp(k * 1.3), transform: `translateX(${(1 - k) * 20}px)` }}>
       <span style={{ fontFamily: F.mono, fontSize: 20, color: C.faint }}>{label}</span>
-      <span style={{ fontFamily: F.display, fontSize: 36, fontWeight: 600, color: C.cream }}>{value}</span>
+      <span style={{ ...DISPLAY, fontSize: 40, lineHeight: 1, letterSpacing: '0.01em', color: C.cream }}>{value}</span>
       <span style={{ fontFamily: F.mono, fontSize: 19, color: dot, whiteSpace: 'nowrap' }}>← {from}</span>
     </div>
   )

@@ -1,6 +1,6 @@
 import { AbsoluteFill } from 'remotion'
 import { Demo } from './Demo'
-import { C, F } from './lib/brand'
+import { C, DISPLAY } from './lib/brand'
 import { Brandmark, LaunchPill, Turn } from './lib/ui'
 
 // 1080x1080 cut for the mobile timeline: the 16:9 demo scaled into the middle, with a brand header and footer.
@@ -10,8 +10,8 @@ export function DemoSquare() {
     <AbsoluteFill style={{ background: C.night }}>
       <AbsoluteFill style={{ background: 'radial-gradient(700px 400px at 50% 0%, rgba(255,65,80,0.10), transparent 70%), radial-gradient(800px 400px at 50% 100%, rgba(242,193,78,0.08), transparent 70%)' }} />
       <div style={{ position: 'absolute', top: 0, height: 236, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-        <Brandmark size={60} />
-        <div style={{ fontFamily: F.display, fontSize: 44, fontWeight: 600, color: C.cream, marginTop: 6 }}>
+        <Brandmark size={50} />
+        <div style={{ ...DISPLAY, fontSize: 64, color: C.cream, marginTop: 14 }}>
           Every buy is <Turn>a fight.</Turn>
         </div>
       </div>

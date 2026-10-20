@@ -66,7 +66,7 @@ export function Banner() {
         <Title size={100} style={{ marginTop: 10 }}>
           Betta <span style={{ color: C.gold }}>Arena</span>
         </Title>
-        <Title size={48} style={{ marginTop: 12 }}>
+        <Title size={58} style={{ marginTop: 14 }}>
           Every buy is <Turn>a fight.</Turn>
         </Title>
       </div>

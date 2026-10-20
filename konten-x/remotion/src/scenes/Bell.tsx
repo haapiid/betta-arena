@@ -184,7 +184,9 @@ export function BuybackScene({ dur }: { dur: number }) {
         </Rise>
         <Rise at={6} style={{ marginTop: 20 }}>
           <Title size={112} color={C.brassText}>
-            All of it <Turn>buys $BETTA.</Turn>
+            All of it
+            <br />
+            <Turn>buys $BETTA.</Turn>
           </Title>
         </Rise>
         <Rise at={16} style={{ marginTop: 40 }}>

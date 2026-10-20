@@ -29,9 +29,21 @@ export const C = {
   shelf: '#0a2530',
 }
 
+// The site's headline style (src/places/places.css .headline): spread onto any Anton text.
+export const DISPLAY = {
+  fontFamily: "'Anton', Impact, 'Arial Narrow', sans-serif",
+  fontWeight: 400,
+  fontStyle: 'normal',
+  fontSynthesis: 'none',
+  textTransform: 'uppercase',
+  letterSpacing: '0.005em',
+  lineHeight: 0.92,
+} as const
+
 export const F = {
-  display: "'Fraunces', Georgia, serif",
-  body: "'Hanken Grotesk', system-ui, sans-serif",
+  // Anton: one weight (400), no italic, always uppercase. Never fake bold/italic on it.
+  display: "'Anton', Impact, 'Arial Narrow', sans-serif",
+  body: "'Inter Tight', system-ui, sans-serif",
   mono: "'JetBrains Mono', ui-monospace, monospace",
 }
 
@@ -39,9 +51,8 @@ let loaded: Promise<unknown> | null = null
 export function loadBrandFonts() {
   if (!loaded)
     loaded = Promise.all([
-      loadFont({ family: 'Fraunces', url: staticFile('fonts/Fraunces-var.woff2'), weight: '100 900' }),
-      loadFont({ family: 'Fraunces', url: staticFile('fonts/Fraunces-italic-var.woff2'), weight: '100 900', style: 'italic' }),
-      loadFont({ family: 'Hanken Grotesk', url: staticFile('fonts/HankenGrotesk-var.woff2'), weight: '100 900' }),
+      loadFont({ family: 'Anton', url: staticFile('fonts/Anton-400.woff2'), weight: '400' }),
+      loadFont({ family: 'Inter Tight', url: staticFile('fonts/InterTight-var.woff2'), weight: '100 900' }),
       loadFont({ family: 'JetBrains Mono', url: staticFile('fonts/JetBrainsMono-var.woff2'), weight: '100 800' }),
     ])
   return loaded

@@ -13,11 +13,11 @@ the shelf; sell once and your fish jumps the jar.
 | File | Size | Format | Where it goes on X |
 | --- | --- | --- | --- |
 | `logo-x.png` | 213 KB | 400x400 PNG | **Profile photo** (Edit profile → avatar). The gold halfmoon betta inside a gold ring; reads cropped to a circle and at 48 px. |
-| `banner-x.png` | 560 KB | 1500x500 PNG | **Header photo** (Edit profile → banner). Ringside: Ronin (challenger) vs Kaiser (champion) in the ring with HP bars and the belt. Text stays out of the bottom-left 420x200 area that the avatar covers. |
-| `post.gif` | 11.1 MB | 1200x675 GIF, 6 s seamless loop, 15 fps | Attach to a **post** (GIF limit 15 MB). A buy drops a betta into the ring; it fights the champion, who keeps the belt; "Every buy is a fight." |
-| `demo-video.mp4` | 8.4 MB | 1920x1080 H.264 MP4, 30 fps, 44.3 s, no audio | Attach to the **launch post** and pin it. Every buy is a fight → a buy lands (tx hash → breed, name; buy size → level) → it drops into the ring and fights the champion → belt + streak → creator fees fill the fee tank → the bell rings → all of it buys $BETTA (ticket stamped SUNK) → it sinks to the deep, burn counter rolls up → the shelf of 10 jars, one sells and its fish jumps the jar → "The deep keeps everything." |
-| `demo-video-square.mp4` | 3.4 MB | 1080x1080 H.264 MP4, 30 fps, 44.3 s, no audio | The same cut framed for the mobile timeline. Use it as a reply or a repost. |
-| `remotion/` | — | Remotion project | Source for all of the above. See `remotion/README.md`. |
+| `banner-x.png` | 546 KB | 1500x500 PNG | **Header photo** (Edit profile → banner). Ringside: Ronin (challenger) vs Kaiser (champion) in the ring with HP bars and the belt. Text stays out of the bottom-left 420x200 area that the avatar covers. |
+| `post.gif` | 10.9 MB | 1200x675 GIF, 6 s seamless loop, 15 fps | Attach to a **post** (GIF limit 15 MB). A buy drops a betta into the ring; it fights the champion, who keeps the belt; "Every buy is a fight." |
+| `demo-video.mp4` | 8.2 MB | 1920x1080 H.264 MP4, 30 fps, 44.3 s, no audio | Attach to the **launch post** and pin it. Every buy is a fight → a buy lands (tx hash → breed, name; buy size → level) → it drops into the ring and fights the champion → belt + streak → creator fees fill the fee tank → the bell rings → all of it buys $BETTA (ticket stamped SUNK) → it sinks to the deep, burn counter rolls up → the shelf of 10 jars, one sells and its fish jumps the jar → "The deep keeps everything." |
+| `demo-video-square.mp4` | 3.3 MB | 1080x1080 H.264 MP4, 30 fps, 44.3 s, no audio | The same cut framed for the mobile timeline. Use it as a reply or a repost. |
+| `remotion/` | — | Remotion project | Source for all of the above. Type follows the site: Anton headlines (uppercase), Inter Tight body, JetBrains Mono numbers. See `remotion/README.md`. |
 
 ## Launch post captions
 

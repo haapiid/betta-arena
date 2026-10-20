@@ -104,15 +104,19 @@ export function ShelfScene({ dur }: { dur: number }) {
         </Rise>
         <Rise at={6} style={{ marginTop: 18 }}>
           <Title size={84}>
-            Ten jars for the ten <Turn>who never sold.</Turn>
+            Ten jars for the ten
+            <br />
+            <Turn>who never sold.</Turn>
           </Title>
         </Rise>
       </div>
-      <div style={{ position: 'absolute', left: 1080, top: 92, width: 700, opacity: cap, transform: `translateY(${(1 - cap) * 20}px)` }}>
-        <Title size={70}>
-          Sell once and your fish <Turn>jumps the jar.</Turn>
+      <div style={{ position: 'absolute', left: 1080, top: 120, width: 700, opacity: cap, transform: `translateY(${(1 - cap) * 20}px)` }}>
+        <Title size={66}>
+          Sell once and your fish
+          <br />
+          <Turn>jumps the jar.</Turn>
         </Title>
-        <div style={{ marginTop: 14, fontFamily: F.mono, fontSize: 24, color: C.dim }}>Off the shelf, for good. No money, just the jar.</div>
+        <div style={{ marginTop: 18, fontFamily: F.mono, fontSize: 24, color: C.dim }}>Off the shelf, for good. No money, just the jar.</div>
       </div>
       <AbsoluteFill>
         <Canvas width={1920} height={1080} unit={1} draw={draw} />

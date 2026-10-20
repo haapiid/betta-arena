@@ -2,7 +2,7 @@
 // framed ring stage with its fighters' name plates and HP bars (like the site's Ringside).
 
 import { AbsoluteFill } from 'remotion'
-import { C, F } from './brand'
+import { C, DISPLAY, F } from './brand'
 import { Canvas } from './Canvas'
 import { boutHp, drawBout, dropK, type Bout, type Fighter } from './ring'
 import { clamp, prand } from './jarScene'
@@ -70,7 +70,7 @@ export function Plate({ f, side, hp, sub, size = 1, show = 1 }: { f: Fighter; si
   return (
     <div style={{ textAlign: r ? 'right' : 'left', opacity: show, transform: `translateY(${(1 - show) * -12}px)` }}>
       <div style={{ display: 'flex', justifyContent: r ? 'flex-end' : 'flex-start', alignItems: 'baseline', gap: 12 * size, whiteSpace: 'nowrap' }}>
-        <span style={{ fontFamily: F.display, fontSize: 40 * size, fontWeight: 600, color: C.cream }}>{f.name}</span>
+        <span style={{ ...DISPLAY, fontSize: 44 * size, lineHeight: 1, letterSpacing: '0.01em', color: C.cream }}>{f.name}</span>
         <span style={{ fontFamily: F.mono, fontSize: 22 * size, color: C.dim }}>Lv {f.lv}</span>
       </div>
       <div style={{ fontFamily: F.mono, fontSize: 17 * size, color: '#7d9aa5', marginTop: 4 * size, whiteSpace: 'nowrap' }}>{sub}</div>
