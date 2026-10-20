@@ -8,11 +8,14 @@ import { asFighter, type Fight } from '../game/ring'
 import { SPECIES } from '../game/species'
 import { BUY_URL, compact, fmt, short, txUrl, type Status } from '../lib/feed'
 import { FightNight } from '../components/Backdrop'
+import { useAccount } from '../lib/account'
+import { openShare } from './Share'
 
 const speciesName = (id: string) => SPECIES.find((s) => s.id === id)?.name ?? 'Betta'
 
 export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: boolean; fresh: Fight | null }) {
   const fights = status.ring.fights
+  const me = useAccount()
   const [idx, setIdx] = useState(0)
   const [step, setStep] = useState(-1)
   const [round, setRound] = useState(0) // bumps to restart the replay
@@ -79,7 +82,7 @@ export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: bo
               Where the fees go
             </a>
           </div>
-          <dl className="mt-9 grid max-w-md grid-cols-3 gap-4 border-t border-[#173543] pt-5">
+          <dl className="mt-9 grid max-w-lg grid-cols-2 gap-4 border-t border-[#173543] pt-5 sm:grid-cols-4">
             <div>
               <dt className="kicker text-[#5d7d89]">Fights</dt>
               <dd className="num mt-1 text-xl">{fmt(status.ring.total)}</dd>
@@ -91,6 +94,10 @@ export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: bo
             <div>
               <dt className="kicker text-[#5d7d89]">In the deep</dt>
               <dd className="num mt-1 text-xl text-[var(--red)]">{pct ? `${fmt(pct, 2)}%` : '0%'}</dd>
+            </div>
+            <div>
+              <dt className="kicker text-[#5d7d89]">Market cap</dt>
+              <dd className="num mt-1 text-xl">{status.price?.mcapUsd ? `$${compact(status.price.mcapUsd)}` : '—'}</dd>
             </div>
           </dl>
         </div>
@@ -106,7 +113,7 @@ export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: bo
                         {x.name} <span className="num text-sm text-[#8eabb6]">Lv {x.level}</span>
                       </div>
                       <div className="kicker truncate text-[#7d9aa5]">
-                        {speciesName(x.speciesId)} · {k ? `champion · ${short(x.owner)}` : `new · ${short(x.owner)}`}
+                        {speciesName(x.speciesId)} · {k ? 'champion' : 'new'} · {me && x.owner === me ? <b className="text-[var(--belt)]">you</b> : short(x.owner)}
                       </div>
                       {battle && (
                         <div className={`hp mt-2 ${k ? 'rotate-180' : ''}`}>
@@ -138,9 +145,14 @@ export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: bo
               </div>
               <div className="mt-3 flex items-start justify-between gap-4 text-sm text-[#8eabb6]">
                 <p className="min-h-[2.6em] flex-1">{cur ? cur.text : battle ? 'Both fish flare…' : `${f.challenger.name} drops in.`}</p>
-                <a className="num shrink-0 text-xs hover:text-white" href={isDemo ? undefined : txUrl(f.tx)} target="_blank" rel="noopener noreferrer">
-                  #{f.n} · {compact(Number(f.tokens) / 1e18)} $BETTA
-                </a>
+                <span className="flex shrink-0 items-center gap-3">
+                  <a className="num text-xs hover:text-white" href={isDemo ? undefined : txUrl(f.tx)} target="_blank" rel="noopener noreferrer">
+                    #{f.n} · {compact(Number(f.tokens) / 1e18)} $BETTA
+                  </a>
+                  <button className="text-xs font-semibold text-[var(--belt)] hover:underline" onClick={() => openShare(f)}>
+                    Share
+                  </button>
+                </span>
               </div>
             </>
           ) : (

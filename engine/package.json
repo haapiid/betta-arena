@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@napi-rs/canvas": "0.1.100",
     "tsx": "4.23.15",
     "viem": "2.57.7"
   },

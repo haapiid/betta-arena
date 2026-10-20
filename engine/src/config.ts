@@ -29,6 +29,8 @@ export const config = {
   sellSinks: list(opt('SELL_SINKS')),
   ponsEscrow: getAddress(opt('PONS_FEE_ESCROW', '0xd3AFEB2a57f70eF218Aa82451c51B2fb0416Ac9e')),
   v4Router: getAddress(opt('UNISWAP_ROUTER_ADDRESS', '0x8876789976dEcBfCbBbe364623C63652db8C0904')),
+  // the site's public address (https://...), for the absolute links in link previews
+  siteUrl: opt('SITE_URL', 'http://localhost:3110').replace(/\/$/, ''),
   allowedOrigins: opt('ALLOWED_ORIGINS', 'http://localhost:3110').split(',').map((s) => s.trim()),
 }
 

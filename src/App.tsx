@@ -9,6 +9,7 @@ import { useScrollMotion } from './lib/motion'
 import { Ringside, Ticker } from './places/Ringside'
 import { Bell, Deep, Rules, Shelf } from './places/Places'
 import { Closing, FightToast, Journey, TopBar, YourJar } from './places/Frame'
+import { ShareCard, useFightFromLink } from './places/Share'
 import './places/places.css'
 
 const PAGE: 'home' | 'community' = window.location.pathname.replace(/\/+$/, '') === '/community' ? 'community' : 'home'
@@ -16,6 +17,7 @@ const PAGE: 'home' | 'community' = window.location.pathname.replace(/\/+$/, '') 
 export default function App() {
   const { status, isDemo, offline } = useStatus()
   const fresh = useNewFight(status.ring.fights)
+  useFightFromLink(status.ring.fights, isDemo)
   useScrollMotion(true, PAGE === 'home')
 
   if (PAGE === 'community')
@@ -47,6 +49,7 @@ export default function App() {
       </main>
       <Closing status={status} />
       <FightToast fight={fresh} />
+      <ShareCard isDemo={isDemo} />
     </div>
   )
 }

@@ -306,7 +306,7 @@ body {
   border-radius: 999px;
   border: 1px solid rgba(220, 250, 255, 0.35);
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35), transparent 60%);
-  animation: rise linear infinite;
+  animation: bubble-rise linear infinite;
 }
 @keyframes caustics {
   to { transform: translate3d(4%, 2%, 0) scale(1.08); }
@@ -314,7 +314,7 @@ body {
 @keyframes rays {
   to { background-position: 220px 0; }
 }
-@keyframes rise {
+@keyframes bubble-rise {
   0% { transform: translate3d(0, 0, 0); opacity: 0; }
   10% { opacity: 1; }
   50% { transform: translate3d(12px, -55vh, 0); }

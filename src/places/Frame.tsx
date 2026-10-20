@@ -9,6 +9,8 @@ import type { Fight } from '../game/ring'
 import { BUY_URL, compact, fmt, getJson, short, txUrl, type Status, type WalletView } from '../lib/feed'
 import { LINKS, TOKEN_ADDRESS } from '../lib/links'
 import { TornEdge, WeedEdge } from './Edges'
+import { openShare } from './Share'
+import { connectWallet, disconnectWallet, useAccount } from '../lib/account'
 
 export const STOPS = [
   ['ring', 'Ringside'],
@@ -24,6 +26,13 @@ export function Logo({ className = '' }: { className?: string }) {
 }
 
 export function TopBar({ isDemo }: { isDemo: boolean }) {
+  const me = useAccount()
+  const [err, setErr] = useState('')
+  const connect = async () => {
+    const e = await connectWallet()
+    setErr(e ?? '')
+    if (e) setTimeout(() => setErr(''), 5000)
+  }
   return (
     <header className="topbar">
       <div className="mx-auto flex h-16 max-w-7xl items-center gap-4 px-4 sm:px-10 lg:px-16">
@@ -48,17 +57,28 @@ export function TopBar({ isDemo }: { isDemo: boolean }) {
               X
             </a>
           )}
-          {BUY_URL ? (
-            <a className="btn btn-gold btn-sm" href={BUY_URL} target="_blank" rel="noopener noreferrer">
+          {BUY_URL && (
+            <a className="btn btn-coral btn-sm hidden sm:inline-flex" href={BUY_URL} target="_blank" rel="noopener noreferrer">
               Buy $BETTA
             </a>
+          )}
+          {me ? (
+            <span className="flex items-center gap-1">
+              <a className="btn btn-ghost btn-sm" href="#jar" title="Your jar">
+                <span className="num">{short(me)}</span>
+              </a>
+              <button className="btn btn-ghost btn-sm !px-2.5" onClick={disconnectWallet} title="Forget this wallet" aria-label="Disconnect wallet">
+                ✕
+              </button>
+            </span>
           ) : (
-            <a className="btn btn-gold btn-sm" href="#jar">
-              Check a wallet
-            </a>
+            <button className="btn btn-gold btn-sm" onClick={connect}>
+              Connect wallet
+            </button>
           )}
         </div>
       </div>
+      {err && <p className="border-t border-[#3a1418] bg-[#2a0f14] px-4 py-1.5 text-center text-xs text-[#ffd0d5]">{err}</p>}
     </header>
   )
 }
@@ -93,6 +113,7 @@ export function Journey() {
 const WALLET = 'betta-arena:wallet-check'
 
 export function YourJar({ status, isDemo }: { status: Status; isDemo: boolean }) {
+  const me = useAccount()
   const [addr, setAddr] = useState(() => {
     try {
       return localStorage.getItem(WALLET) ?? ''
@@ -122,19 +143,17 @@ export function YourJar({ status, isDemo }: { status: Status; isDemo: boolean })
     if (addr && isAddress(addr)) void check(addr)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemo])
+  // a connected wallet fills the jar by itself
+  useEffect(() => {
+    if (!me) return
+    setAddr(me)
+    void check(me)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me])
 
   const connect = async () => {
-    const eth = (window as Window & { ethereum?: { request: (a: { method: string }) => Promise<string[]> } }).ethereum
-    if (!eth) return setErr('No wallet in this browser. Paste your address instead.')
-    try {
-      const [a] = await eth.request({ method: 'eth_requestAccounts' })
-      if (a) {
-        setAddr(a)
-        void check(a)
-      }
-    } catch {
-      setErr('The wallet did not share an address.')
-    }
+    const e = await connectWallet()
+    if (e) setErr(e)
   }
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -195,10 +214,13 @@ export function YourJar({ status, isDemo }: { status: Status; isDemo: boolean })
                 </p>
                 <ul className="mt-3 grid gap-1 text-xs text-[#6d5f4e]">
                   {view.recent.slice(0, 5).map((f) => (
-                    <li key={f.n}>
+                    <li key={f.n} className="flex items-center justify-between gap-2">
                       <a className="hover:underline" href={isDemo ? undefined : txUrl(f.tx)} target="_blank" rel="noopener noreferrer">
                         #{f.n} {fightLine(f)}
                       </a>
+                      <button className="shrink-0 font-semibold text-[#b3122c] hover:underline" onClick={() => openShare(f)}>
+                        card
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -227,6 +249,7 @@ function demoWallet(addr: string, s: Status): WalletView {
 
 // ---------- the toast for a new fight ----------
 export function FightToast({ fight }: { fight: Fight | null }) {
+  const me = useAccount()
   const [show, setShow] = useState<Fight | null>(null)
   useEffect(() => {
     if (!fight) return
@@ -235,11 +258,17 @@ export function FightToast({ fight }: { fight: Fight | null }) {
     return () => clearTimeout(t)
   }, [fight?.n])
   if (!show) return null
+  const mine = !!me && (show.buyer === me || show.championOwner === me)
   return (
-    <a href="#ring" className="rise fixed bottom-5 right-5 z-[70] max-w-xs rounded-2xl border border-[#3a1418] bg-[#12060a]/95 px-4 py-3 text-sm shadow-2xl backdrop-blur" aria-live="polite">
-      <div className="kicker text-[var(--red)]">New fight #{show.n}</div>
-      <div className="mt-0.5 text-white">{fightLine(show)}</div>
-    </a>
+    <div className="rise fixed bottom-5 right-5 z-[70] max-w-xs rounded-2xl border border-[#3a1418] bg-[#12060a]/95 px-4 py-3 text-sm shadow-2xl backdrop-blur" aria-live="polite">
+      <div className="kicker text-[var(--red)]">{mine ? 'Your fight' : 'New fight'} #{show.n}</div>
+      <a href="#ring" className="mt-0.5 block text-white">
+        {fightLine(show)}
+      </a>
+      <button className="mt-2 text-xs font-semibold text-[var(--belt)] hover:underline" onClick={() => openShare(show)}>
+        {mine ? 'Share your card' : 'Share this fight'}
+      </button>
+    </div>
   )
 }
 
@@ -275,7 +304,15 @@ export function Closing({ status }: { status: Status }) {
             $BETTA · {TOKEN_ADDRESS} · Robinhood Chain
           </p>
         )}
-        <p className="mx-auto mt-10 max-w-2xl text-xs leading-relaxed text-[#5d7d89]">
+        <p className="mt-8 flex justify-center gap-5 text-xs text-[#8eabb6]">
+          <a className="hover:text-white" href="/terms.html">
+            Terms
+          </a>
+          <a className="hover:text-white" href="/privacy.html">
+            Privacy
+          </a>
+        </p>
+        <p className="mx-auto mt-6 max-w-2xl text-xs leading-relaxed text-[#5d7d89]">
           $BETTA is a memecoin with no promise of value, no yield and no roadmap of returns. Buybacks spend creator fees only; past buybacks say nothing about future price. Only spend what you can lose, and check that crypto is allowed where you live. No real fish are harmed.
         </p>
       </div>

@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022"],
+    "lib": ["ES2022", "DOM"],
     "types": ["node"],
     "strict": true,
     "noEmit": true,
@@ -11,5 +11,5 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true
   },
-  "include": ["src", "../src/game/ring.ts", "../src/game/battle.ts", "../src/game/species.ts", "../src/game/traits.ts", "../src/render/color.ts", "../src/config.ts"]
+  "include": ["src", "../src/card/cards.ts", "../src/render/betta.ts", "../src/game/ring.ts", "../src/game/battle.ts", "../src/game/species.ts", "../src/game/traits.ts", "../src/render/color.ts", "../src/config.ts"]
 }

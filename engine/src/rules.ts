@@ -4,7 +4,7 @@
 //  · the fight against the champion, with the same fight engine the site replays
 //  · the shelf: the biggest holders who never sold
 
-import type { Ring } from '../../src/game/ring.ts'
+import type { Fight, Ring } from '../../src/game/ring.ts'
 export { asFighter, enterRing, fishFromTx, levelFor, type Champion, type Fight, type Fish, type Ring } from '../../src/game/ring.ts'
 
 // ---------- state ----------
@@ -45,6 +45,8 @@ export interface State {
   holders: Record<string, Holder>
   isContract: Record<string, boolean>
   ring: Ring
+  // every fight, oldest first (fight n at index n - 1), so any fight can get its card and its page
+  book: Fight[]
   rounds: Round[]
   totals: { claimedWei: string; spentWei: string; burnedUnits: string }
 }
@@ -56,6 +58,7 @@ export const freshState = (token: string): State => ({
   holders: {},
   isContract: {},
   ring: { total: 0, champion: null, fights: [], seen: [], best: null },
+  book: [],
   rounds: [],
   totals: { claimedWei: '0', spentWei: '0', burnedUnits: '0' },
 })

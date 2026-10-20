@@ -9,8 +9,19 @@ export default defineConfig(({ mode }) => {
   // Without it there is no proxy, the site finds no engine and shows its demo, and the terminal stays quiet.
   // In production nginx (or the host) sends /api to the engine.
   const proxy = env.ENGINE_URL ? { '/api': { target: env.ENGINE_URL, changeOrigin: true } } : undefined
+  const siteUrl = (env.SITE_URL || '').replace(/\/$/, '')
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        // absolute link-preview URLs need the site's address; without it the preview tags are left out
+        name: 'site-url',
+        transformIndexHtml: (html: string) =>
+          siteUrl ? html.replaceAll('%SITE_URL%', siteUrl) : html.replace(/\s*<meta[^>]*%SITE_URL%[^>]*>/g, ''),
+      },
+    ],
+    define: { 'import.meta.env.VITE_SITE_URL': JSON.stringify(siteUrl) },
     server: { host: '0.0.0.0', port, proxy },
     preview: { host: '0.0.0.0', port, allowedHosts: true },
   }

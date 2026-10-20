@@ -115,6 +115,8 @@ export async function indexTransfers() {
         h.lastInTx = tx
         if (src !== ZERO && !(await whyNotAFight(state.ring, { src, dst, value, tx }, minUnits, m))) {
           const f = enterRing(state.ring, { tx, t, buyer: dst, tokens: value, minUnits })
+          ;(state.book ||= []).push(f)
+          if (state.book.length > 50_000) state.book.splice(0, state.book.length - 50_000)
           h.fights++
           if (f.winner !== 'champion') h.wins++
           if (f.championOwner && f.winner === 'champion') {

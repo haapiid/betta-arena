@@ -6,6 +6,7 @@ import { Market, Room, SeaFloor } from '../components/Backdrop'
 import { SPECIES } from '../game/species'
 import { addrUrl, compact, fmt, short, txUrl, type Status } from '../lib/feed'
 import { AwningEdge, BellEdge, JarRowEdge, SurfaceEdge } from './Edges'
+import { useAccount } from '../lib/account'
 
 // ---------- 2 · the rule board at the stall ----------
 export function Rules({ status }: { status: Status }) {
@@ -40,6 +41,7 @@ export function Rules({ status }: { status: Status }) {
 
 // ---------- 3 · the keepers' shelf ----------
 export function Shelf({ status, isDemo }: { status: Status; isDemo: boolean }) {
+  const me = useAccount()
   const rows = status.shelf
   const top = rows.slice(0, 3)
   const rest = rows.slice(3)
@@ -77,8 +79,8 @@ export function Shelf({ status, isDemo }: { status: Status; isDemo: boolean }) {
                       <span className={`absolute left-3 top-3 z-[3] rounded-full px-2.5 py-1 text-xs font-bold ${r.rank === 1 ? 'belt' : 'bg-black/50 text-white'}`}>No. {r.rank}</span>
                     </div>
                     <div className="mt-3 flex items-baseline justify-between gap-2">
-                      <a className="num truncate font-semibold hover:text-[var(--belt)]" href={isDemo ? undefined : addrUrl(r.addr)} target="_blank" rel="noopener noreferrer">
-                        {short(r.addr)}
+                      <a className={`num truncate font-semibold hover:text-[var(--belt)] ${r.addr === me ? 'text-[var(--belt)]' : ''}`} href={isDemo ? undefined : addrUrl(r.addr)} target="_blank" rel="noopener noreferrer">
+                        {r.addr === me ? 'you' : short(r.addr)}
                       </a>
                       <span className="num text-sm text-[#a9c3cc]">{compact(r.balance)}</span>
                     </div>
@@ -104,7 +106,7 @@ export function Shelf({ status, isDemo }: { status: Status; isDemo: boolean }) {
                         </svg>
                       </div>
                       <div className="num mt-2 text-xs text-[#a9c3cc]">No. {r.rank}</div>
-                      <div className="num truncate text-[0.7rem] text-[#5d7d89]">{short(r.addr)}</div>
+                      <div className={`num truncate text-[0.7rem] ${r.addr === me ? 'font-bold text-[var(--belt)]' : 'text-[#5d7d89]'}`}>{r.addr === me ? 'you' : short(r.addr)}</div>
                     </div>
                   ))}
                 </div>
@@ -227,6 +229,7 @@ export function Deep({ status, isDemo }: { status: Status; isDemo: boolean }) {
         </div>
         <p className="mt-3 text-[#8eabb6]">
           $BETTA at the dead address · <b className="text-white">{fmt(pct, 3)}%</b> of the supply, gone for good
+          {status.price?.tokenUsd ? <> · about ${compact(status.supply.inTheDeep * status.price.tokenUsd)} at today's price</> : null}
         </p>
         <div className="mx-auto mt-14 max-w-3xl text-left">
           <p className="kicker mb-3 text-[#6f97a4]">Jumped the jar · sold once, off the shelf for good</p>

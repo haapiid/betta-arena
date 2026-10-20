@@ -39,6 +39,7 @@ export interface Status {
   totals: { claimedEth: number; spentEth: number; burnedByBell: number }
   supply: { total: number; inTheDeep: number }
   ethUsd: number
+  price?: { tokenUsd: number; source: string; mcapUsd: number }
   ring: { total: number; champion: Champion | null; best: Champion | null; fights: Fight[] }
   shelf: ShelfRow[]
   jumpers: { addr: string; at: number; tx: string }[]
@@ -66,6 +67,16 @@ export async function getJson<T>(path: string): Promise<T> {
   return r.json() as Promise<T>
 }
 
+// Which edition the page shows. <meta name="rh-mode" content="demo|live"> in index.html (flip it on the
+// server with scripts/site-mode.sh, no rebuild), and ?demo or ?live in the address to preview either one.
+function mode(): 'demo' | 'live' {
+  const q = new URLSearchParams(window.location.search)
+  if (q.has('demo')) return 'demo'
+  if (q.has('live')) return 'live'
+  return document.querySelector('meta[name="rh-mode"]')?.getAttribute('content') === 'demo' ? 'demo' : 'live'
+}
+export const MODE = mode()
+
 /** Live status, falling back to the demo while there is no token (or no engine). */
 export function useStatus() {
   const [live, setLive] = useState<Status | null>(null)
@@ -73,6 +84,7 @@ export function useStatus() {
   const [offline, setOffline] = useState(false)
 
   useEffect(() => {
+    if (MODE === 'demo') return
     let alive = true
     const load = () =>
       getJson<Status>('/api/status')
@@ -129,6 +141,7 @@ function demoStatus(): Status {
     totals: { claimedEth: 0.086, spentEth: 0.0852, burnedByBell: 4_066_000 },
     supply: { total: 1_000_000_000, inTheDeep: 4_066_000 },
     ethUsd: 3400,
+    price: { tokenUsd: 0.000042, source: 'demo', mcapUsd: 41_800 },
     ring: { total: ring.total, champion: ring.champion, best: ring.best, fights: ring.fights.slice(0, 12) },
     shelf,
     jumpers: [3, 9, 14].map((i, k) => ({ addr: fakeAddr(200 + i), at: Math.floor(Date.now() / 1000) - k * 3000, tx: fakeTx() })),

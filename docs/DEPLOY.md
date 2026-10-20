@@ -18,20 +18,22 @@ Versi sebelumnya (NFT, toko, turnamen) disimpan di branch `game-onchain` dan tid
 - **RPC khusus** untuk Robinhood Chain (Quicknode, Alchemy, dll.). RPC publik dibatasi.
 - **Domain** untuk situs dan akun X (link-nya diisi di `VITE_LINK_X`).
 
-## 1. Server (VPS Ubuntu)
+## 1. Server (VPS Ubuntu) — satu perintah
+
+Arahkan domain ke IP VPS, lalu:
 
 ```bash
-# Node 22 LTS, nginx, pm2
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt install -y nodejs nginx
-sudo npm i -g pm2
-
 git clone https://github.com/haapiid/betta-arena.git && cd betta-arena
-npm ci && (cd engine && npm ci)
-cp engine/.env.example engine/.env   # isi (lihat di bawah)
-cp .env.example .env                 # isi link-link
-npm run build
+sudo sh scripts/install-server.sh domainmu.com emailmu@contoh.com
 ```
+
+Skrip ini memasang Node 22, nginx, pm2 dan HTTPS (certbot), membangun situs, menjalankan engine dengan pm2,
+dan menulis konfigurasi nginx (situs, `/api`, live stream, link `/fight/…`, header keamanan).
+Setelah itu tinggal mengisi `engine/.env` dan `.env` (langkah 2), lalu
+`npm run build && pm2 restart betta-engine --update-env`.
+
+Di `.env` situs, isi juga `SITE_URL=https://domainmu.com` (supaya gambar pratinjau link di X muncul) dan
+`VITE_LINK_BUY`, `VITE_LINK_X`, `VITE_TOKEN_ADDRESS`.
 
 ## 2. Engine
 
@@ -45,6 +47,7 @@ Isi `engine/.env`:
 | `BUYBACK_STEP_ETH` | bel berbunyi saat tangki fee berisi sebanyak ini (default 0,02 ETH) |
 | `FIGHT_MIN_TOKENS` | buy terkecil yang dihitung sebagai pertarungan (default 10.000 token), supaya buy debu tidak bisa memborong pertarungan |
 | `ALLOWED_ORIGINS` | `https://domainmu` |
+| `SITE_URL` | `https://domainmu` (untuk halaman `/fight/123` dan kartu pratinjau) |
 
 ```bash
 cd engine
@@ -57,7 +60,24 @@ curl -s localhost:5050/api/status | head -c 300
 Kalau `.env` diubah: `pm2 restart betta-engine --update-env`. Data engine ada di `engine/data/state.json`
 (cadangkan sesekali). `TOKEN_ADDRESS` baru memulai data dari nol, dan data lama otomatis dicadangkan.
 
+## 2b. Dry-run di chain asli (WAJIB sebelum launching)
+
+Engine belum pernah menyentuh Robinhood Chain sungguhan (RPC-nya tidak bisa dijangkau dari laptop dev).
+Jalankan di server, terhadap **token Pons lain yang sudah trading**:
+
+```bash
+cd engine
+npx tsx --env-file-if-exists=.env scripts/dryrun.ts 0xTOKEN_PONS_LAIN 20000
+```
+
+Hasilnya: berapa transfer yang akan jadi pertarungan, berapa yang dihitung jual, dan kenapa sisanya bukan
+keduanya, plus contoh transaksi. Buka beberapa contoh di explorer dan pastikan BUY benar-benar beli dan SELL
+benar-benar jual. Ulangi setelah buy pertama $BETTA (tambahkan alamat wallet kreator di akhir perintah untuk
+melihat isi fee escrow).
+
 ## 3. nginx (situs + API dalam satu domain)
+
+`scripts/install-server.sh` sudah menulis konfigurasi ini. Untuk referensi:
 
 ```nginx
 server {
@@ -73,6 +93,7 @@ server {
     proxy_read_timeout 1h;
   }
   location /api/ { proxy_pass http://127.0.0.1:5050; proxy_set_header X-Forwarded-For $remote_addr; }
+  location /fight/ { proxy_pass http://127.0.0.1:5050; }   # link share: pratinjau = kartu fight
   location /community { try_files /index.html =404; }
   location / { try_files $uri /index.html; }
 }
@@ -82,6 +103,12 @@ Lalu HTTPS: `sudo apt install certbot python3-certbot-nginx && sudo certbot --ng
 Salin header keamanan dari `public/_headers` ke blok server (`add_header ...`). Alternatifnya, host situs di
 Vercel/Netlify/Cloudflare Pages (header ikut otomatis) dengan `VITE_API_URL=https://api.domainmu`.
 
+## Mode demo / live
+
+Sebelum launching situs bisa tetap online dengan pertarungan demo berlabel:
+`sh scripts/site-mode.sh demo` (tanpa build ulang). Saat launching: `sh scripts/site-mode.sh live`.
+Kapan pun, `?demo` di alamat menampilkan demo dan `?live` memaksa data live.
+
 ## 4. Hari launching
 
 1. Luncurkan $BETTA di Pons dari wallet engine.
@@ -90,6 +117,8 @@ Vercel/Netlify/Cloudflare Pages (header ikut otomatis) dengan `VITE_API_URL=http
 3. Log harus menampilkan `Pons curve: 0x…`. Setelah buy pertama, `/api/status` menampilkan pertarungan dan shelf.
 4. Pantau bel pertama: `pm2 logs betta-engine` → `Bell #1 … sent to the deep (0x…)`. Buka transaksinya di
    explorer dan pastikan tokennya masuk ke `0x…dEaD`.
+5. Jalankan `sh scripts/postlaunch-check.sh https://domainmu.com`: engine, curve, harga USD, kartu pratinjau,
+   `/api` lewat nginx, og:image. Lalu tes share: buka satu fight, tekan Share → Post on X, cek pratinjaunya.
 
 ## 5. Yang perlu diketahui
 

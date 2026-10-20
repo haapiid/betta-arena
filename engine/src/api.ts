@@ -7,8 +7,10 @@ import { live } from './buyback.ts'
 import { excludedSet, market } from './indexer.ts'
 import { shelf } from './rules.ts'
 import { state } from './store.ts'
+import { price } from './price.ts'
+import { fightPage, fightPng, sitePng } from './cards.ts'
 
-export const supply = { total: 0n, dead: 0n, ethUsd: 0 }
+export const supply = { total: 0n, dead: 0n }
 const units = (raw: string | bigint) => Number(formatUnits(BigInt(raw), market.decimals))
 const eth = (wei: string | bigint) => Number(formatEther(BigInt(wei)))
 
@@ -37,7 +39,9 @@ export function status() {
     fees: { tankEth: eth(live.escrowWei), stepEth: Number(config.buybackStepEth) },
     totals: { claimedEth: eth(state.totals.claimedWei), spentEth: eth(state.totals.spentWei), burnedByBell: units(state.totals.burnedUnits) },
     supply: { total: units(supply.total), inTheDeep: units(supply.dead) },
-    ethUsd: supply.ethUsd,
+    ethUsd: price.ethUsd,
+    // dollar figures are display only; market cap counts what is not in the deep
+    price: { tokenUsd: price.tokenUsd, source: price.source, mcapUsd: price.tokenUsd * (units(supply.total) - units(supply.dead)) },
     ring: { total: ring.total, champion: ring.champion, best: ring.best, fights: ring.fights.slice(0, 12) },
     shelf: shelfRows(),
     jumpers,
@@ -70,6 +74,8 @@ function limited(ip: string) {
   return ++h.n > 300
 }
 
+const host = () => config.siteUrl.replace(/^https?:\/\//, '')
+
 export function startApi() {
   const server = http.createServer((req, res) => {
     const origin = req.headers.origin ?? ''
@@ -95,6 +101,32 @@ export function startApi() {
       return json(200, state.ring.fights.filter((f) => f.n < before).slice(0, 30))
     }
     if (p === '/api/rounds') return json(200, state.rounds.slice(0, 100).map(roundRow))
+    // a single fight, its card, and its shareable page (the preview on X is the card)
+    const fightNo = (m: RegExpMatchArray | null) => (m ? state.book?.[Number(m[1]) - 1] ?? null : null)
+    let m = p.match(/^\/api\/fight\/(\d{1,7})$/)
+    if (m) {
+      const f = fightNo(m)
+      return f ? json(200, f, 'public, max-age=3600') : json(404, { error: 'No such fight.' })
+    }
+    m = p.match(/^\/api\/card\/fight\/(\d{1,7})\.png$/)
+    if (m) {
+      const f = fightNo(m)
+      if (!f) return json(404, { error: 'No such fight.' })
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=86400' })
+      return void res.end(fightPng(f, host()))
+    }
+    if (p === '/api/card/site.png') {
+      const c = state.ring.champion
+      const pct = supply.total ? (Number(supply.dead) / Number(supply.total)) * 100 : 0
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=120' })
+      return void res.end(sitePng({ fights: state.ring.total, champion: c?.fish ?? null, streak: c?.streak ?? 0, inTheDeep: units(supply.dead), pct }, host()))
+    }
+    m = p.match(/^\/fight\/(\d{1,7})$/)
+    if (m) {
+      const f = fightNo(m)
+      res.writeHead(f ? 200 : 302, f ? { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, max-age=3600' } : { Location: config.siteUrl })
+      return void res.end(f ? fightPage(f, config.siteUrl) : '')
+    }
     if (p.startsWith('/api/wallet/')) {
       const a = p.slice('/api/wallet/'.length).toLowerCase()
       if (!isAddress(a)) return json(400, { error: 'Not an address.' })

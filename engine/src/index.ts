@@ -7,6 +7,7 @@ import { account, erc20Abi, pub } from './chain.ts'
 import { indexTransfers, market, takeMoved } from './indexer.ts'
 import { live, runBell } from './buyback.ts'
 import { pushUpdate, startApi, supply } from './api.ts'
+import { refreshPrice } from './price.ts'
 import { log, saveNow, state } from './store.ts'
 
 if (!config.token) log('warn', 'STANDBY: no TOKEN_ADDRESS yet. The site shows the pre-launch page.')
@@ -50,22 +51,13 @@ async function tick() {
   }
 }
 
-async function ethPrice() {
-  try {
-    const r = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot', { signal: AbortSignal.timeout(8000) })
-    const j = (await r.json()) as { data?: { amount?: string } }
-    supply.ethUsd = parseFloat(j?.data?.amount ?? '0') || supply.ethUsd
-  } catch {
-    /* display only */
-  }
-}
 
 startApi()
 log('info', `API on 127.0.0.1:${config.port}`)
 setInterval(tick, config.pollSeconds * 1000)
 void tick()
-setInterval(ethPrice, 60_000)
-void ethPrice()
+setInterval(refreshPrice, 60_000)
+void refreshPrice()
 process.on('SIGINT', () => {
   saveNow()
   process.exit(0)
