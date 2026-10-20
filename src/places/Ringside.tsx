@@ -62,7 +62,7 @@ export function Ringside({ status, isDemo, fresh }: { status: Status; isDemo: bo
         <div data-ring="copy">
           <p className="kicker mb-4 text-[#8eabb6]">{isDemo ? 'Preview · demo fights until $BETTA launches on Pons' : `Live · Robinhood Chain · fight #${fmt(status.ring.total)}`}</p>
           <h1 className="headline text-[clamp(2.8rem,6.4vw,5.6rem)]">
-            Every buy is <em>a fight.</em>
+            Every buy is <em>a&nbsp;fight.</em>
           </h1>
           <p className="mt-5 max-w-md text-[1.05rem] leading-relaxed text-[#a9c3cc]">
             Buy $BETTA and a betta drops into the ring. Its breed and name come from your transaction; a bigger buy brings a stronger fish. It fights the champion on the spot.

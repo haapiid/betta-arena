@@ -6,13 +6,6 @@
 */
 
 @font-face {
-  font-family: 'Hanken Grotesk';
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url('/fonts/HankenGrotesk-var.woff2') format('woff2');
-}
-@font-face {
   font-family: 'JetBrains Mono';
   font-style: normal;
   font-weight: 100 800;
@@ -38,8 +31,8 @@
   --color-warn: #f2a33a;
   --color-bad: #ff5d6c;
 
-  --font-display: "Fraunces Variable", Georgia, serif;
-  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-display: "Anton", Impact, "Arial Narrow", sans-serif;
+  --font-body: "Inter Tight Variable", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -75,9 +68,15 @@ body {
   color: var(--color-ink);
 }
 
+/* Anton: one weight, no italic. Never let the browser fake bold or italic on it. */
 .display {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  font-weight: 400 !important;
+  font-style: normal;
+  font-synthesis: none;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
 }
 .num {
   font-family: var(--font-mono);
